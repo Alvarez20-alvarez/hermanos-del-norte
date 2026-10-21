@@ -1,405 +1,61 @@
 import { useEffect, useState } from 'react'
+import { API } from './config/api'
+import Productos from './modulos/productos/Productos'
+import Stock from './modulos/stock/Stock'
+import Inicio from './modulos/inicio/Inicio'
+import Empleados from './modulos/empleados/Empleados'
+import Ventas from './modulos/ventas/Ventas'
+import Pedidos from './modulos/pedidos/Pedidos'
+import Clientes from './modulos/clientes/Clientes'
+import Proveedores from './modulos/proveedores/Proveedores'
+import Compras from './modulos/compras/Compras'
+import Precios from './modulos/precios/Precios'
+import Reportes from './modulos/reportes/Reportes'
+import Configuracion from './modulos/configuracion/Configuracion'
+import Login from './modulos/login/Login'
+import Sidebar from './componentes/layout/Sidebar'
+import Header from './componentes/layout/Header'
+import {
+  clienteVacio,
+  empleadoVacio,
+  movimientoVacio,
+  permisos,
+  productoVacio,
+  proveedorVacio,
+} from './constantes/sistema'
+import type {
+  CarritoItem,
+  Cliente,
+  Compra,
+  ConfiguracionEmpresa,
+  Empleado,
+  FormaPago,
+  FormCliente,
+  FormEmpleado,
+  FormMovimiento,
+  FormProducto,
+  FormProveedor,
+  ItemCompra,
+  MovimientoStock,
+  PrecioEditable,
+  Producto,
+  Proveedor,
+  ReporteResumen,
+  RolBD,
+  Seccion,
+  TipoVenta,
+  UsuarioSesion,
+  Venta,
+} from './tipos'
 
-const API = 'http://localhost:3001/api'
-
-// =====================================================
-// ÍNDICE RÁPIDO - CTRL + F
-// =====================================================
-// TIPOS
-// PERMISOS
-// FORMULARIOS VACÍOS
+// =====
 // APP
-// REPORTES - ESTADOS
-// PRECIOS - ESTADOS
-// COMPRAS - ESTADOS
-// PROVEEDORES - ESTADOS
-// LOGIN
-// PRODUCTOS
-// STOCK
-// CLIENTES
-// EMPLEADOS
-// VENTAS
-// CARGA DE DATOS
-// COMPRAS
-// PRECIOS
-// FILTROS
-// SISTEMA
-// INICIO
-// REPORTES
-// CONFIGURACION
-// TARJETA DEL DASHBOARD
-// =====================================================
-
-// =====================================================
-// TIPOS
-// =====================================================
-
-type ProductoMasVendido = {
-  id: number
-  nombre: string
-  presentacion: string
-  cantidad_vendida: number | string
-  total_vendido: number | string
-}
-
-type VentaPorPago = {
-  forma_pago: string
-  cantidad: number | string
-  total: number | string
-}
-
-type VentaPorDia = {
-  fecha: string
-  cantidad: number | string
-  total: number | string
-}
-
-type StockBajoReporte = {
-  id: number
-  nombre: string
-  presentacion: string
-  stock: number
-  stock_minimo: number
-}
-
-type ProductoRentable = {
-  id: number
-  nombre: string
-  presentacion: string
-  cantidad_vendida: number | string
-  total_vendido: number | string
-  costo_total: number | string
-  ganancia: number | string
-}
-
-type ReporteResumen = {
-  desde: string
-  hasta: string
-
-  ventas: {
-    cantidad: number
-    total: number
-    descuentos: number
-  }
-
-  compras: {
-    cantidad: number
-    total: number
-  }
-
-  movimiento_neto: number
-
-  rentabilidad: {
-    costo_vendido: number
-    ganancia_bruta: number
-    margen: number
-  }
-
-  productos_mas_vendidos: ProductoMasVendido[]
-
-  productos_mas_rentables: ProductoRentable[]
-
-  ventas_por_pago: VentaPorPago[]
-
-  ventas_por_dia: VentaPorDia[]
-
-  stock_bajo: StockBajoReporte[]
-}
-
-type PrecioEditable = {
-  precio_compra: string
-  precio_minorista: string
-  precio_mayorista: string
-}
-
-
-type ItemCompra = {
-  producto: Producto
-  cantidad: number
-  precio_compra: number
-}
-
-type Compra = {
-  id: number
-  proveedor_id: number | null
-  proveedor: string | null
-  usuario: string
-  total: number | string
-  observacion: string
-  fecha: string
-}
-
-type Rol =
-  | 'Administrador'
-  | 'Cajero'
-  | 'Repositor'
-
-type Seccion =
-  | 'Inicio'
-  | 'Ventas'
-  | 'Productos'
-  | 'Stock'
-  | 'Precios'
-  | 'Clientes'
-  | 'Proveedores'
-  | 'Compras'
-  | 'Empleados'
-  | 'Reportes'
-  | 'Configuracion'
-
-type UsuarioSesion = {
-  id: number
-  nombre: string
-  usuario: string
-  rol: Rol
-  rol_id: number
-  telefono: string
-}
-
-type RolBD = {
-  id: number
-  nombre: Rol
-  descripcion: string
-}
-
-type Empleado = {
-  id: number
-  nombre: string
-  usuario: string
-  telefono: string
-  activo: number
-  rol_id: number
-  rol: Rol
-  created_at: string
-}
-
-type FormEmpleado = {
-  nombre: string
-  usuario: string
-  password: string
-  rol_id: string
-  telefono: string
-  activo: boolean
-}
-
-type Producto = {
-  id: number
-  codigo_barras: string | null
-  nombre: string
-  categoria: string | null
-  presentacion: string | null
-  precio_compra: number | string
-  precio_minorista: number | string
-  precio_mayorista: number | string
-  cantidad_min_mayorista: number
-  stock: number
-  stock_minimo: number
-  activo: number
-}
-
-type FormProducto = {
-  codigo_barras: string
-  nombre: string
-  categoria: string
-  presentacion: string
-  precio_compra: string
-  precio_minorista: string
-  precio_mayorista: string
-  cantidad_min_mayorista: string
-  stock: string
-  stock_minimo: string
-}
-
-type TipoMovimiento =
-  | 'ENTRADA'
-  | 'SALIDA'
-  | 'AJUSTE'
-
-type MovimientoStock = {
-  id: number
-  producto_id: number
-  producto: string
-  codigo_barras: string
-  tipo: TipoMovimiento
-  cantidad: number
-  stock_anterior: number
-  stock_nuevo: number
-  motivo: string
-  fecha: string
-}
-
-type FormMovimiento = {
-  producto_id: string
-  tipo: TipoMovimiento
-  cantidad: string
-  motivo: string
-}
-
-type TipoVenta =
-  | 'MINORISTA'
-  | 'MAYORISTA'
-
-type FormaPago =
-  | 'EFECTIVO'
-  | 'TRANSFERENCIA'
-  | 'DEBITO'
-  | 'CREDITO'
-  | 'OTRO'
-
-type CarritoItem = {
-  producto: Producto
-  cantidad: number
-}
-
-type Cliente = {
-  id: number
-  nombre: string
-  dni_cuit: string
-  telefono: string
-  direccion: string
-  tipo_cliente: TipoVenta
-  activo: number
-}
-
-type FormCliente = {
-  nombre: string
-  dni_cuit: string
-  telefono: string
-  direccion: string
-  tipo_cliente: TipoVenta
-}
-
-type Venta = {
-  id: number
-  usuario: string
-  cliente_id: number | null
-  cliente: string | null
-  tipo_venta: TipoVenta
-  forma_pago: FormaPago
-  subtotal: number | string
-  descuento: number | string
-  total: number | string
-  fecha: string
-}
-
-type Proveedor = {
-  id: number
-  nombre: string
-  cuit: string
-  telefono: string
-  direccion: string
-  email: string
-  activo: number
-}
-
-type FormProveedor = {
-  nombre: string
-  cuit: string
-  telefono: string
-  direccion: string
-  email: string
-}
-
-type ConfiguracionEmpresa = {
-  nombre_empresa: string
-  cuit: string
-  direccion: string
-  telefono: string
-  email: string
-  alias_pago: string
-}
-
-// =====================================================
-// PERMISOS
-// =====================================================
-
-const permisos: Record<Rol, Seccion[]> = {
-  Administrador: [
-    'Inicio',
-    'Ventas',
-    'Productos',
-    'Stock',
-    'Precios',
-    'Clientes',
-    'Proveedores',
-    'Compras',
-    'Empleados',
-    'Reportes',
-    'Configuracion',
-  ],
-
-  Cajero: [
-    'Inicio',
-    'Ventas',
-    'Productos',
-    'Clientes',
-  ],
-
-  Repositor: [
-    'Inicio',
-    'Productos',
-    'Stock',
-  ],
-}
-
-// =====================================================
-// FORMULARIOS VACÍOS
-// =====================================================
-
-const proveedorVacio: FormProveedor = {
-  nombre: '',
-  cuit: '',
-  telefono: '',
-  direccion: '',
-  email: '',
-}
-
-const productoVacio: FormProducto = {
-  codigo_barras: '',
-  nombre: '',
-  categoria: '',
-  presentacion: '',
-  precio_compra: '',
-  precio_minorista: '',
-  precio_mayorista: '',
-  cantidad_min_mayorista: '1',
-  stock: '',
-  stock_minimo: '',
-}
-
-const movimientoVacio: FormMovimiento = {
-  producto_id: '',
-  tipo: 'ENTRADA',
-  cantidad: '',
-  motivo: '',
-}
-
-const clienteVacio: FormCliente = {
-  nombre: '',
-  dni_cuit: '',
-  telefono: '',
-  direccion: '',
-  tipo_cliente: 'MINORISTA',
-}
-
-const empleadoVacio: FormEmpleado = {
-  nombre: '',
-  usuario: '',
-  password: '',
-  rol_id: '',
-  telefono: '',
-  activo: true,
-}
-
-// =====================================================
-// APP
-// =====================================================
-
+// =====
 function App() {
 
-  // ===================================================
+  // ========================
   // CONFIGURACION - ESTADOS
-  // ===================================================
+  // ========================
 
   const [
     configuracion,
@@ -420,9 +76,9 @@ function App() {
 
 
 
-  // ===================================================
+  // ================
 // REPORTES - ESTADOS
-// ===================================================
+// ==================
 
 const hoy =
   new Date()
@@ -449,9 +105,9 @@ const [
   setCargandoReporte,
 ] = useState(false)
 
-  // ===================================================
+  // ================
 // PRECIOS - ESTADOS
-// ===================================================
+// ===================
 
 const [
   busquedaPrecio,
@@ -465,9 +121,9 @@ const [
   Record<number, PrecioEditable>
 >({})
 
-// ===================================================
+// =================
 // COMPRAS - ESTADOS
-// ===================================================
+// ==================
 
 const [compras, setCompras] =
   useState<Compra[]>([])
@@ -507,9 +163,9 @@ const [
   setGuardandoCompra,
 ] = useState(false)
 
-// ===================================================
+// =====================
 // PROVEEDORES - ESTADOS
-// ===================================================
+// =====================
 
 const [proveedores, setProveedores] =
   useState<Proveedor[]>([])
@@ -537,9 +193,9 @@ const [
 )
 
 
-  // ===================================================
+  //=====
   // LOGIN
-  // ===================================================
+  // ====
 
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
@@ -557,9 +213,9 @@ const [
     setSeccionActual,
   ] = useState<Seccion>('Inicio')
 
-  // ===================================================
+  // ========
   // PRODUCTOS
-  // ===================================================
+  // ===========
 
   const [productos, setProductos] =
     useState<Producto[]>([])
@@ -596,6 +252,107 @@ const [
 
   const [busquedaStock, setBusquedaStock] =
     useState('')
+
+
+  const [editandoStockMasivo, setEditandoStockMasivo] =
+    useState(false)
+
+  const [stockEditable, setStockEditable] =
+    useState<Record<number, string>>({})
+
+  const [guardandoStockMasivo, setGuardandoStockMasivo] =
+    useState(false)
+
+  const iniciarEdicionStockMasivo = () => {
+    const valores: Record<number, string> = {}
+
+    productos.forEach((producto) => {
+      valores[producto.id] = String(producto.stock)
+    })
+
+    setStockEditable(valores)
+    setEditandoStockMasivo(true)
+  }
+
+  const cancelarEdicionStockMasivo = () => {
+    setEditandoStockMasivo(false)
+    setStockEditable({})
+  }
+
+  const guardarStockMasivo = async () => {
+    const cambios = productos.filter((producto) => {
+      const nuevoValor = Number(stockEditable[producto.id])
+
+      return (
+        !Number.isNaN(nuevoValor) &&
+        nuevoValor >= 0 &&
+        nuevoValor !== Number(producto.stock)
+      )
+    })
+
+    if (cambios.length === 0) {
+      alert('No realizaste cambios en el stock')
+      return
+    }
+
+    const hayValorInvalido = productos.some((producto) => {
+      const valor = stockEditable[producto.id]
+      if (valor === undefined) return false
+
+      const numero = Number(valor)
+      return Number.isNaN(numero) || numero < 0
+    })
+
+    if (hayValorInvalido) {
+      alert('Revisá los valores ingresados. El stock no puede ser negativo.')
+      return
+    }
+
+    if (!window.confirm(`¿Guardar ${cambios.length} cambios de stock?`)) {
+      return
+    }
+
+    try {
+      setGuardandoStockMasivo(true)
+
+      for (const producto of cambios) {
+        const respuesta = await fetch(`${API}/stock/movimiento`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            producto_id: producto.id,
+            tipo: 'AJUSTE',
+            cantidad: Number(stockEditable[producto.id]),
+            motivo: 'Edición masiva de stock',
+          }),
+        })
+
+        const datos = await respuesta.json()
+
+        if (!respuesta.ok) {
+          throw new Error(datos.mensaje || `No se pudo actualizar ${producto.nombre}`)
+        }
+      }
+
+      await cargarProductos()
+      await cargarMovimientos()
+
+      setEditandoStockMasivo(false)
+      setStockEditable({})
+
+      alert('Stock actualizado correctamente')
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el stock'
+      )
+    } finally {
+      setGuardandoStockMasivo(false)
+    }
+  }
 
   // ===================================================
   // CLIENTES
@@ -814,13 +571,16 @@ const eliminarProveedor = async (
   const [descuento, setDescuento] =
     useState('0')
 
-  const [ventas, setVentas] =
+  const [, setVentas] =
     useState<Venta[]>([])
 
   const [
     guardandoVenta,
     setGuardandoVenta,
   ] = useState(false)
+
+  const [ticketVenta, setTicketVenta] =
+  useState<any | null>(null)
 
   // ===================================================
   // CARGA DE DATOS
@@ -1029,7 +789,6 @@ useEffect(() => {
   cargarRoles()
   cargarProveedores()
   cargarCompras()
-  cargarReporte()
   cargarConfiguracion()
 }, [])
 
@@ -1740,112 +1499,24 @@ useEffect(() => {
     )
 
   const descuentoNumero =
-    Math.max(
-      0,
-      Number(descuento) || 0
+    Math.min(
+      100,
+      Math.max(
+        0,
+        Number(descuento) || 0
+      )
     )
+
+  const descuentoImporte =
+    subtotalVenta *
+    (descuentoNumero / 100)
 
   const totalVenta =
     Math.max(
       0,
       subtotalVenta -
-        descuentoNumero
+        descuentoImporte
     )
-
-  const confirmarVenta = async () => {
-    if (carrito.length === 0) {
-      alert(
-        'No hay productos en la venta'
-      )
-      return
-    }
-
-    if (
-      !window.confirm(
-        `¿Confirmar venta por $${totalVenta.toLocaleString(
-          'es-AR'
-        )}?`
-      )
-    ) {
-      return
-    }
-
-    try {
-      setGuardandoVenta(true)
-
-      const respuesta = await fetch(
-        `${API}/ventas`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-
-          body: JSON.stringify({
-            usuario:
-              usuarioLogueado?.usuario,
-
-            cliente_id:
-              clienteVenta
-                ? Number(
-                    clienteVenta
-                  )
-                : null,
-
-            tipo_venta:
-              tipoVenta,
-
-            forma_pago:
-              formaPago,
-
-            descuento:
-              descuentoNumero,
-
-            productos:
-              carrito.map(
-                (item) => ({
-                  producto_id:
-                    item.producto.id,
-
-                  cantidad:
-                    item.cantidad,
-                })
-              ),
-          }),
-        }
-      )
-
-      const datos = await respuesta.json()
-
-      if (!respuesta.ok) {
-        alert(datos.mensaje)
-        return
-      }
-
-      alert(
-        `Venta #${datos.venta_id} registrada correctamente`
-      )
-
-      setCarrito([])
-      setClienteVenta('')
-      setTipoVenta('MINORISTA')
-      setFormaPago('EFECTIVO')
-      setDescuento('0')
-      setCodigoVenta('')
-
-      await cargarProductos()
-      await cargarMovimientos()
-      await cargarVentas()
-    } catch {
-      alert(
-        'No se pudo registrar la venta'
-      )
-    } finally {
-      setGuardandoVenta(false)
-    }
-  }
 
 // ===================================================
 // COMPRAS
@@ -2025,6 +1696,168 @@ const totalCompra =
     0
   )
 
+const confirmarVenta = async () => {
+  if (carrito.length === 0) {
+    alert('No hay productos en la venta')
+    return
+  }
+
+  if (
+    !window.confirm(
+      `¿Confirmar venta por $${totalVenta.toLocaleString(
+        'es-AR'
+      )}?`
+    )
+  ) {
+    return
+  }
+
+  try {
+    setGuardandoVenta(true)
+
+    const respuesta = await fetch(
+      `${API}/ventas`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          usuario:
+            usuarioLogueado?.usuario,
+
+          cliente_id:
+            clienteVenta
+              ? Number(
+                  clienteVenta
+                )
+              : null,
+
+          tipo_venta:
+            tipoVenta,
+
+          forma_pago:
+            formaPago,
+
+          descuento:
+            descuentoImporte,
+
+          productos:
+            carrito.map(
+              (item) => ({
+                producto_id:
+                  item.producto.id,
+
+                cantidad:
+                  item.cantidad,
+              })
+            ),
+        }),
+      }
+    )
+
+    const datos =
+      await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(
+        datos.mensaje ||
+          'No se pudo registrar la venta'
+      )
+      return
+    }
+
+    const clienteSeleccionado =
+      clientes.find(
+        (cliente) =>
+          cliente.id ===
+          Number(clienteVenta)
+      )
+
+    setTicketVenta({
+      venta_id:
+        datos.venta_id,
+
+      fecha:
+        new Date().toLocaleString(
+          'es-AR'
+        ),
+
+      cliente:
+        clienteSeleccionado?.nombre ||
+        'Consumidor final',
+
+      usuario:
+        usuarioLogueado?.nombre ||
+        usuarioLogueado?.usuario ||
+        '',
+
+      tipoVenta,
+
+      formaPago,
+
+      productos:
+        carrito.map(
+          (item) => {
+            const precio =
+              obtenerPrecio(
+                item.producto
+              )
+
+            return {
+              nombre:
+                item.producto.nombre,
+
+              cantidad:
+                item.cantidad,
+
+              precio,
+
+              subtotal:
+                precio *
+                item.cantidad,
+            }
+          }
+        ),
+
+      subtotal:
+        subtotalVenta,
+
+      descuentoPorcentaje:
+        descuentoNumero,
+
+      descuentoImporte,
+
+      total:
+        totalVenta,
+    })
+
+    setCarrito([])
+    setClienteVenta('')
+    setTipoVenta('MINORISTA')
+    setFormaPago('EFECTIVO')
+    setDescuento('0')
+    setCodigoVenta('')
+
+    await cargarProductos()
+    await cargarMovimientos()
+    await cargarVentas()
+    await cargarReporte()
+
+  } catch {
+    alert(
+      'No se pudo registrar la venta'
+    )
+  } finally {
+    setGuardandoVenta(false)
+  }
+
+}
+
+
 const confirmarCompra = async () => {
   if (
     carritoCompra.length === 0
@@ -2093,7 +1926,10 @@ const confirmarCompra = async () => {
       await respuesta.json()
 
     if (!respuesta.ok) {
-      alert(datos.mensaje)
+      alert(
+        datos.mensaje ||
+          'No se pudo registrar la compra'
+      )
       return
     }
 
@@ -2112,6 +1948,7 @@ const confirmarCompra = async () => {
     await cargarMovimientos()
     await cargarCompras()
     await cargarReporte()
+
   } catch {
     alert(
       'No se pudo registrar la compra'
@@ -2543,12 +2380,6 @@ const proveedoresFiltrados =
         producto.stock_minimo
     ).length
 
-  const empleadosActivos =
-    empleados.filter(
-      (empleado) =>
-        Boolean(empleado.activo)
-    ).length
-
   const productoStockSeleccionado =
     productos.find(
       (producto) =>
@@ -2564,96 +2395,15 @@ const proveedoresFiltrados =
 
   if (!usuarioLogueado) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
-
-          <div className="text-center mb-8">
-
-            <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-              HN
-            </div>
-
-            <h1 className="text-3xl font-bold">
-              HERMANOS DEL NORTE
-            </h1>
-
-            <p className="text-slate-500 mt-2">
-              Distribuidora Mayorista y Minorista
-            </p>
-
-          </div>
-
-          <form
-            onSubmit={iniciarSesion}
-            className="space-y-5"
-          >
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Usuario
-              </label>
-
-              <input
-                value={usuario}
-                onChange={(e) =>
-                  setUsuario(
-                    e.target.value
-                  )
-                }
-                placeholder="Ingrese su usuario"
-                className="w-full border px-4 py-3 rounded-xl"
-              />
-
-            </div>
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Contraseña
-              </label>
-
-              <input
-                type="password"
-                value={password}
-                onChange={(e) =>
-                  setPassword(
-                    e.target.value
-                  )
-                }
-                placeholder="Ingrese su contraseña"
-                className="w-full border px-4 py-3 rounded-xl"
-              />
-
-            </div>
-
-            {mensaje && (
-              <div className="bg-red-100 text-red-700 p-3 rounded-xl">
-                {mensaje}
-              </div>
-            )}
-
-            <button
-              disabled={
-                iniciandoSesion
-              }
-              className="w-full bg-slate-900 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
-            >
-              {iniciandoSesion
-                ? 'Ingresando...'
-                : 'Iniciar sesión'}
-            </button>
-
-          </form>
-
-          <div className="mt-6 text-center text-xs text-slate-400">
-            Acceso exclusivo para personal autorizado
-          </div>
-
-        </div>
-
-      </div>
+      <Login
+        usuario={usuario}
+        setUsuario={setUsuario}
+        password={password}
+        setPassword={setPassword}
+        mensaje={mensaje}
+        iniciandoSesion={iniciandoSesion}
+        iniciarSesion={iniciarSesion}
+      />
     )
   }
 
@@ -2669,93 +2419,19 @@ const proveedoresFiltrados =
   return (
     <div className="min-h-screen bg-slate-100 flex">
 
-      {/* SIDEBAR */}
-
-      <aside className="w-72 bg-slate-950 text-white min-h-screen p-5">
-
-        <h1 className="text-2xl font-bold">
-          HERMANOS DEL NORTE
-        </h1>
-
-        <p className="text-sm text-slate-400 mb-8">
-          Mayorista y Minorista
-        </p>
-
-        <nav className="space-y-2">
-
-          {seccionesPermitidas.map(
-            (seccion) => (
-
-              <button
-                key={seccion}
-                onClick={() =>
-                  setSeccionActual(
-                    seccion
-                  )
-                }
-                className={`w-full text-left px-4 py-3 rounded-xl ${
-                  seccionActual ===
-                  seccion
-                    ? 'bg-white text-slate-900 font-semibold'
-                    : 'text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                {seccion}
-              </button>
-
-            )
-          )}
-
-        </nav>
-
-      </aside>
+      <Sidebar
+        secciones={seccionesPermitidas}
+        actual={seccionActual}
+        cambiarSeccion={setSeccionActual}
+      />
 
       <div className="flex-1 min-w-0">
 
-        {/* HEADER */}
-
-        <header className="bg-white border-b px-8 py-5 flex justify-between items-center">
-
-          <div>
-
-            <h2 className="text-2xl font-bold">
-              {seccionActual}
-            </h2>
-
-            <p className="text-sm text-slate-500">
-              Sistema Integral de Gestión Comercial
-            </p>
-
-          </div>
-
-          <div className="flex items-center gap-5">
-
-            <div className="text-right">
-
-              <p className="font-semibold">
-                {
-                  usuarioLogueado.nombre
-                }
-              </p>
-
-              <p className="text-sm text-slate-500">
-                {
-                  usuarioLogueado.rol
-                }
-              </p>
-
-            </div>
-
-            <button
-              onClick={cerrarSesion}
-              className="bg-slate-900 text-white px-4 py-2 rounded-xl"
-            >
-              Cerrar sesión
-            </button>
-
-          </div>
-
-        </header>
+        <Header
+          seccion={seccionActual}
+          usuario={usuarioLogueado}
+          cerrarSesion={cerrarSesion}
+        />
 
         <main className="p-8">
 
@@ -2763,3817 +2439,249 @@ const proveedoresFiltrados =
           {/* INICIO */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Inicio' && (
-
-            <div>
-
-              <div>
-
-                <h3 className="text-3xl font-bold">
-                  Panel principal
-                </h3>
-
-                <p className="text-slate-500 mt-1">
-                  Bienvenido, {usuarioLogueado.nombre}.
-                </p>
-
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 mt-8">
-
-                <div className="bg-white border rounded-2xl p-6">
-                  <p className="text-slate-500">
-                    Ventas de hoy
-                  </p>
-
-                  <p className="text-3xl font-bold mt-1">
-                    $
-                    {Number(
-                      reporte?.ventas.total || 0
-                    ).toLocaleString(
-                      'es-AR'
-                    )}
-                  </p>
-
-                  <p className="text-sm text-slate-400 mt-2">
-                    {reporte?.ventas.cantidad || 0} operaciones
-                  </p>
-                </div>
-
-                <div className="bg-white border rounded-2xl p-6">
-                  <p className="text-slate-500">
-                    Ganancia bruta
-                  </p>
-
-                  <p className="text-3xl font-bold mt-1 text-green-700">
-                    $
-                    {Number(
-                      reporte?.rentabilidad
-                        .ganancia_bruta || 0
-                    ).toLocaleString(
-                      'es-AR'
-                    )}
-                  </p>
-
-                  <p className="text-sm text-slate-400 mt-2">
-                    Margen{' '}
-                    {Number(
-                      reporte?.rentabilidad
-                        .margen || 0
-                    ).toFixed(1)}
-                    %
-                  </p>
-                </div>
-
-                <div className="bg-white border rounded-2xl p-6">
-                  <p className="text-slate-500">
-                    Compras de hoy
-                  </p>
-
-                  <p className="text-3xl font-bold mt-1">
-                    $
-                    {Number(
-                      reporte?.compras.total || 0
-                    ).toLocaleString(
-                      'es-AR'
-                    )}
-                  </p>
-
-                  <p className="text-sm text-slate-400 mt-2">
-                    {reporte?.compras.cantidad || 0} compras
-                  </p>
-                </div>
-
-                <Tarjeta
-                  titulo="Stock bajo"
-                  valor={stockBajo}
-                />
-
-                <Tarjeta
-                  titulo="Clientes"
-                  valor={clientes.length}
-                />
-
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
-
-                <div className="bg-white border rounded-2xl overflow-hidden">
-
-                  <div className="p-5 border-b">
-
-                    <h4 className="text-xl font-bold">
-                      Productos más vendidos hoy
-                    </h4>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                      Ranking según las ventas del día.
-                    </p>
-
-                  </div>
-
-                  {reporte &&
-                  reporte.productos_mas_vendidos.length >
-                    0 ? (
-
-                    <div>
-
-                      {reporte.productos_mas_vendidos
-                        .slice(0, 5)
-                        .map(
-                          (
-                            producto,
-                            indice
-                          ) => (
-
-                          <div
-                            key={producto.id}
-                            className="flex justify-between items-center p-4 border-t first:border-t-0"
-                          >
-
-                            <div>
-
-                              <p className="font-semibold">
-                                {indice + 1}.{' '}
-                                {producto.nombre}
-                              </p>
-
-                              <p className="text-xs text-slate-500">
-                                {producto.cantidad_vendida}{' '}
-                                vendidos
-                              </p>
-
-                            </div>
-
-                            <strong>
-                              $
-                              {Number(
-                                producto.total_vendido
-                              ).toLocaleString(
-                                'es-AR'
-                              )}
-                            </strong>
-
-                          </div>
-
-                        )
-                      )}
-
-                    </div>
-
-                  ) : (
-
-                    <div className="p-8 text-center text-slate-500">
-                      Todavía no hay ventas hoy.
-                    </div>
-
-                  )}
-
-                </div>
-
-                <div className="bg-white border rounded-2xl overflow-hidden">
-
-                  <div className="p-5 border-b">
-
-                    <h4 className="text-xl font-bold">
-                      Alertas de stock
-                    </h4>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                      Productos que necesitan reposición.
-                    </p>
-
-                  </div>
-
-                  {reporte &&
-                  reporte.stock_bajo.length >
-                    0 ? (
-
-                    <div>
-
-                      {reporte.stock_bajo
-                        .slice(0, 6)
-                        .map(
-                          (producto) => (
-
-                          <div
-                            key={producto.id}
-                            className="flex justify-between items-center p-4 border-t first:border-t-0"
-                          >
-
-                            <div>
-
-                              <p className="font-semibold">
-                                {producto.nombre}
-                              </p>
-
-                              <p className="text-xs text-slate-500">
-                                Mínimo:{' '}
-                                {producto.stock_minimo}
-                              </p>
-
-                            </div>
-
-                            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">
-                              Stock {producto.stock}
-                            </span>
-
-                          </div>
-
-                        )
-                      )}
-
-                    </div>
-
-                  ) : (
-
-                    <div className="p-8 text-center text-slate-500">
-                      No hay productos con stock bajo.
-                    </div>
-
-                  )}
-
-                </div>
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Inicio' && (
+            <Inicio
+              clientes={clientes}
+              reporte={reporte}
+              stockBajo={stockBajo}
+              usuarioLogueado={usuarioLogueado}
+            />
           )}
 
           {/* ================================================= */}
           {/* EMPLEADOS */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Empleados' && (
-
-            <div>
-
-              <div className="flex justify-between items-center">
-
-                <div>
-
-                  <h3 className="text-3xl font-bold">
-                    Empleados
-                  </h3>
-
-                  <p className="text-slate-500">
-                    Administrá usuarios, contraseñas y permisos.
-                  </p>
-
-                </div>
-
-                <button
-                  onClick={
-                    nuevoEmpleado
-                  }
-                  className="bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold"
-                >
-                  + Nuevo empleado
-                </button>
-
-              </div>
-
-              {mostrarFormularioEmpleado && (
-
-                <form
-                  onSubmit={
-                    guardarEmpleado
-                  }
-                  className="bg-white border rounded-2xl p-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-5"
-                >
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Nombre completo
-                    </label>
-
-                    <input
-                      required
-                      value={
-                        formularioEmpleado.nombre
-                      }
-                      onChange={(e) =>
-                        setFormularioEmpleado({
-                          ...formularioEmpleado,
-                          nombre:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Usuario
-                    </label>
-
-                    <input
-                      required
-                      value={
-                        formularioEmpleado.usuario
-                      }
-                      onChange={(e) =>
-                        setFormularioEmpleado({
-                          ...formularioEmpleado,
-                          usuario:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Contraseña
-                    </label>
-
-                    <input
-                      type="password"
-                      value={
-                        formularioEmpleado.password
-                      }
-                      onChange={(e) =>
-                        setFormularioEmpleado({
-                          ...formularioEmpleado,
-                          password:
-                            e.target.value,
-                        })
-                      }
-                      placeholder={
-                        empleadoEditando
-                          ? 'Dejar vacío para mantener la actual'
-                          : 'Contraseña'
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Rol
-                    </label>
-
-                    <select
-                      required
-                      value={
-                        formularioEmpleado.rol_id
-                      }
-                      onChange={(e) =>
-                        setFormularioEmpleado({
-                          ...formularioEmpleado,
-                          rol_id:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    >
-
-                      <option value="">
-                        Seleccionar rol
-                      </option>
-
-                      {roles.map(
-                        (rol) => (
-
-                          <option
-                            key={rol.id}
-                            value={rol.id}
-                          >
-                            {rol.nombre}
-                          </option>
-
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Teléfono
-                    </label>
-
-                    <input
-                      value={
-                        formularioEmpleado.telefono
-                      }
-                      onChange={(e) =>
-                        setFormularioEmpleado({
-                          ...formularioEmpleado,
-                          telefono:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  {empleadoEditando && (
-
-                    <div className="flex items-center">
-
-                      <label className="flex items-center gap-3">
-
-                        <input
-                          type="checkbox"
-                          checked={
-                            formularioEmpleado.activo
-                          }
-                          onChange={(e) =>
-                            setFormularioEmpleado({
-                              ...formularioEmpleado,
-                              activo:
-                                e.target.checked,
-                            })
-                          }
-                          className="w-5 h-5"
-                        />
-
-                        <span className="font-semibold">
-                          Empleado activo
-                        </span>
-
-                      </label>
-
-                    </div>
-
-                  )}
-
-                  <div className="md:col-span-2 flex gap-3">
-
-                    <button className="bg-slate-900 text-white px-6 py-3 rounded-xl">
-                      {empleadoEditando
-                        ? 'Guardar cambios'
-                        : 'Crear empleado'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMostrarFormularioEmpleado(
-                          false
-                        )
-                        setEmpleadoEditando(
-                          null
-                        )
-                      }}
-                      className="border px-6 py-3 rounded-xl"
-                    >
-                      Cancelar
-                    </button>
-
-                  </div>
-
-                </form>
-
-              )}
-
-              <div className="bg-white border rounded-2xl p-5 mt-6">
-
-                <input
-                  value={
-                    busquedaEmpleado
-                  }
-                  onChange={(e) =>
-                    setBusquedaEmpleado(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Buscar empleado..."
-                  className="border px-4 py-3 rounded-xl w-full md:w-96"
-                />
-
-              </div>
-
-              <div className="bg-white border rounded-2xl mt-5 overflow-x-auto">
-
-                <table className="w-full">
-
-                  <thead className="bg-slate-100">
-
-                    <tr>
-
-                      <th className="p-4 text-left">
-                        Empleado
-                      </th>
-
-                      <th className="p-4 text-left">
-                        Usuario
-                      </th>
-
-                      <th className="p-4 text-left">
-                        Rol
-                      </th>
-
-                      <th className="p-4 text-left">
-                        Teléfono
-                      </th>
-
-                      <th className="p-4 text-center">
-                        Estado
-                      </th>
-
-                      <th className="p-4 text-center">
-                        Acciones
-                      </th>
-
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {empleadosFiltrados.map(
-                      (empleado) => (
-
-                        <tr
-                          key={empleado.id}
-                          className="border-t"
-                        >
-
-                          <td className="p-4 font-semibold">
-                            {empleado.nombre}
-                          </td>
-
-                          <td className="p-4">
-                            {empleado.usuario}
-                          </td>
-
-                          <td className="p-4">
-                            {empleado.rol}
-                          </td>
-
-                          <td className="p-4">
-                            {empleado.telefono ||
-                              '-'}
-                          </td>
-
-                          <td className="p-4 text-center">
-
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                empleado.activo
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}
-                            >
-                              {empleado.activo
-                                ? 'ACTIVO'
-                                : 'INACTIVO'}
-                            </span>
-
-                          </td>
-
-                          <td className="p-4">
-
-                            <div className="flex justify-center gap-2">
-
-                              <button
-                                onClick={() =>
-                                  editarEmpleado(
-                                    empleado
-                                  )
-                                }
-                                className="bg-slate-100 px-4 py-2 rounded-lg font-semibold"
-                              >
-                                Editar
-                              </button>
-
-                              {empleado.id !==
-                                usuarioLogueado.id && (
-
-                                <button
-                                  onClick={() =>
-                                    cambiarEstadoEmpleado(
-                                      empleado
-                                    )
-                                  }
-                                  className={`px-4 py-2 rounded-lg font-semibold ${
-                                    empleado.activo
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-green-100 text-green-700'
-                                  }`}
-                                >
-                                  {empleado.activo
-                                    ? 'Desactivar'
-                                    : 'Activar'}
-                                </button>
-
-                              )}
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Empleados' && (
+            <Empleados
+              busquedaEmpleado={busquedaEmpleado}
+              cambiarEstadoEmpleado={cambiarEstadoEmpleado}
+              editarEmpleado={editarEmpleado}
+              empleadoEditando={empleadoEditando}
+              empleadosFiltrados={empleadosFiltrados}
+              formularioEmpleado={formularioEmpleado}
+              guardarEmpleado={guardarEmpleado}
+              mostrarFormularioEmpleado={mostrarFormularioEmpleado}
+              nuevoEmpleado={nuevoEmpleado}
+              roles={roles}
+              setBusquedaEmpleado={setBusquedaEmpleado}
+              setEmpleadoEditando={setEmpleadoEditando}
+              setFormularioEmpleado={setFormularioEmpleado}
+              setMostrarFormularioEmpleado={setMostrarFormularioEmpleado}
+              usuarioLogueado={usuarioLogueado}
+            />
           )}
 
           {/* ================================================= */}
           {/* VENTAS */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Ventas' && (
-
-            <div>
-
-              <h3 className="text-3xl font-bold">
-                Caja / Ventas
-              </h3>
-
-              <p className="text-slate-500">
-                Lector de código de barras y registro de ventas.
-              </p>
-
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
-
-                <div className="xl:col-span-2 space-y-5">
-
-                  <div className="bg-white border rounded-2xl p-6">
-
-                    <h4 className="text-xl font-bold">
-                      Código de barras
-                    </h4>
-
-                    <form
-                      onSubmit={
-                        buscarCodigo
-                      }
-                      className="flex gap-3 mt-4"
-                    >
-
-                      <input
-                        autoFocus
-                        value={
-                          codigoVenta
-                        }
-                        onChange={(e) =>
-                          setCodigoVenta(
-                            e.target.value
-                          )
-                        }
-                        placeholder="Escanear código..."
-                        className="flex-1 border-2 px-5 py-4 rounded-xl"
-                      />
-
-                      <button className="bg-slate-900 text-white px-6 rounded-xl">
-                        Buscar
-                      </button>
-
-                    </form>
-
-                    <div className="flex gap-3 mt-4">
-
-                      <select
-                        value={
-                          productoVentaSeleccionado
-                        }
-                        onChange={(e) =>
-                          setProductoVentaSeleccionado(
-                            e.target.value
-                          )
-                        }
-                        className="flex-1 border px-4 py-3 rounded-xl"
-                      >
-
-                        <option value="">
-                          Agregar producto manualmente
-                        </option>
-
-                        {productos.map(
-                          (producto) => (
-
-                            <option
-                              key={producto.id}
-                              value={producto.id}
-                            >
-                              {producto.nombre} - Stock {producto.stock}
-                            </option>
-
-                          )
-                        )}
-
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={
-                          agregarProductoManual
-                        }
-                        className="border px-5 rounded-xl"
-                      >
-                        Agregar
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                  <div className="bg-white border rounded-2xl overflow-x-auto">
-
-                    <table className="w-full">
-
-                      <thead className="bg-slate-100">
-
-                        <tr>
-                          <th className="p-4 text-left">
-                            Producto
-                          </th>
-
-                          <th className="p-4">
-                            Precio
-                          </th>
-
-                          <th className="p-4">
-                            Cantidad
-                          </th>
-
-                          <th className="p-4">
-                            Subtotal
-                          </th>
-
-                          <th className="p-4">
-                            Acción
-                          </th>
-                        </tr>
-
-                      </thead>
-
-                      <tbody>
-
-                        {carrito.map(
-                          (item) => {
-
-                            const precio =
-                              obtenerPrecio(
-                                item.producto
-                              )
-
-                            return (
-                              <tr
-                                key={
-                                  item.producto.id
-                                }
-                                className="border-t"
-                              >
-
-                                <td className="p-4 font-semibold">
-                                  {item.producto.nombre}
-                                </td>
-
-                                <td className="p-4 text-center">
-                                  $
-                                  {precio.toLocaleString(
-                                    'es-AR'
-                                  )}
-                                </td>
-
-                                <td className="p-4">
-
-                                  <div className="flex justify-center items-center gap-2">
-
-                                    <button
-                                      onClick={() =>
-                                        cambiarCantidad(
-                                          item.producto.id,
-                                          item.cantidad - 1
-                                        )
-                                      }
-                                      className="border w-9 h-9 rounded-lg"
-                                    >
-                                      -
-                                    </button>
-
-                                    <span className="w-10 text-center font-bold">
-                                      {item.cantidad}
-                                    </span>
-
-                                    <button
-                                      onClick={() =>
-                                        cambiarCantidad(
-                                          item.producto.id,
-                                          item.cantidad + 1
-                                        )
-                                      }
-                                      className="border w-9 h-9 rounded-lg"
-                                    >
-                                      +
-                                    </button>
-
-                                  </div>
-
-                                </td>
-
-                                <td className="p-4 text-center font-bold">
-                                  $
-                                  {(
-                                    precio *
-                                    item.cantidad
-                                  ).toLocaleString(
-                                    'es-AR'
-                                  )}
-                                </td>
-
-                                <td className="p-4 text-center">
-
-                                  <button
-                                    onClick={() =>
-                                      cambiarCantidad(
-                                        item.producto.id,
-                                        0
-                                      )
-                                    }
-                                    className="text-red-600"
-                                  >
-                                    Quitar
-                                  </button>
-
-                                </td>
-
-                              </tr>
-                            )
-                          }
-                        )}
-
-                      </tbody>
-
-                    </table>
-
-                    {carrito.length ===
-                      0 && (
-
-                      <div className="p-10 text-center text-slate-500">
-                        No hay productos en la venta.
-                      </div>
-
-                    )}
-
-                  </div>
-
-                </div>
-
-                <div className="bg-white border rounded-2xl p-6 h-fit">
-
-                  <h4 className="text-2xl font-bold">
-                    Resumen
-                  </h4>
-
-                  <label className="font-semibold block mt-5 mb-2">
-                    Cliente
-                  </label>
-
-                  <select
-                    value={
-                      clienteVenta
-                    }
-                    onChange={(e) =>
-                      cambiarClienteVenta(
-                        e.target.value
-                      )
-                    }
-                    className="w-full border px-4 py-3 rounded-xl"
-                  >
-
-                    <option value="">
-                      Consumidor final
-                    </option>
-
-                    {clientes.map(
-                      (cliente) => (
-
-                        <option
-                          key={cliente.id}
-                          value={cliente.id}
-                        >
-                          {cliente.nombre} - {cliente.tipo_cliente}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                  <label className="font-semibold block mt-5 mb-2">
-                    Tipo de venta
-                  </label>
-
-                  <select
-                    value={tipoVenta}
-                    onChange={(e) =>
-                      setTipoVenta(
-                        e.target.value as TipoVenta
-                      )
-                    }
-                    className="w-full border px-4 py-3 rounded-xl"
-                  >
-
-                    <option value="MINORISTA">
-                      Minorista
-                    </option>
-
-                    <option value="MAYORISTA">
-                      Mayorista
-                    </option>
-
-                  </select>
-
-                  <label className="font-semibold block mt-5 mb-2">
-                    Forma de pago
-                  </label>
-
-                  <select
-                    value={formaPago}
-                    onChange={(e) =>
-                      setFormaPago(
-                        e.target.value as FormaPago
-                      )
-                    }
-                    className="w-full border px-4 py-3 rounded-xl"
-                  >
-
-                    <option value="EFECTIVO">
-                      Efectivo
-                    </option>
-
-                    <option value="TRANSFERENCIA">
-                      Transferencia
-                    </option>
-
-                    <option value="DEBITO">
-                      Débito
-                    </option>
-
-                    <option value="CREDITO">
-                      Crédito
-                    </option>
-
-                    <option value="OTRO">
-                      Otro
-                    </option>
-
-                  </select>
-
-                  <label className="font-semibold block mt-5 mb-2">
-                    Descuento
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    value={descuento}
-                    onChange={(e) =>
-                      setDescuento(
-                        e.target.value
-                      )
-                    }
-                    className="w-full border px-4 py-3 rounded-xl"
-                  />
-
-                  <div className="border-t mt-6 pt-5 space-y-3">
-
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <strong>
-                        ${subtotalVenta.toLocaleString('es-AR')}
-                      </strong>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span>Descuento</span>
-                      <span>
-                        -${descuentoNumero.toLocaleString('es-AR')}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-2xl font-bold border-t pt-4">
-                      <span>TOTAL</span>
-                      <span>
-                        ${totalVenta.toLocaleString('es-AR')}
-                      </span>
-                    </div>
-
-                  </div>
-
-                  <button
-                    onClick={
-                      confirmarVenta
-                    }
-                    disabled={
-                      guardandoVenta ||
-                      carrito.length === 0
-                    }
-                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold mt-6 disabled:opacity-40"
-                  >
-                    {guardandoVenta
-                      ? 'Registrando...'
-                      : 'Confirmar venta'}
-                  </button>
-
-                </div>
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Ventas' && (
+            <Ventas
+              ticketVenta={ticketVenta}
+              setTicketVenta={setTicketVenta}
+              agregarProductoManual={agregarProductoManual}
+              buscarCodigo={buscarCodigo}
+              cambiarCantidad={cambiarCantidad}
+              cambiarClienteVenta={cambiarClienteVenta}
+              carrito={carrito}
+              clienteVenta={clienteVenta}
+              clientes={clientes}
+              codigoVenta={codigoVenta}
+              confirmarVenta={confirmarVenta}
+              descuento={descuento}
+              descuentoNumero={descuentoNumero}
+              descuentoImporte={descuentoImporte}
+              formaPago={formaPago}
+              guardandoVenta={guardandoVenta}
+              obtenerPrecio={obtenerPrecio}
+              productoVentaSeleccionado={productoVentaSeleccionado}
+              productos={productos}
+              setCodigoVenta={setCodigoVenta}
+              setDescuento={setDescuento}
+              setFormaPago={setFormaPago}
+              setProductoVentaSeleccionado={setProductoVentaSeleccionado}
+              setTipoVenta={setTipoVenta}
+              subtotalVenta={subtotalVenta}
+              tipoVenta={tipoVenta}
+              totalVenta={totalVenta}
+            />
+          )}
+
+          {/* ================================================= */}
+          {/* PEDIDOS / REPARTOS */}
+          {/* ================================================= */}
+
+          {seccionActual === 'Pedidos' && (
+            <Pedidos
+              clientes={clientes}
+              productos={productos}
+              usuario={usuarioLogueado}
+              cargarClientes={cargarClientes}
+            />
           )}
 
           {/* ================================================= */}
           {/* CLIENTES */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Clientes' && (
-
-            <div>
-
-              <div className="flex justify-between">
-
-                <div>
-                  <h3 className="text-3xl font-bold">
-                    Clientes
-                  </h3>
-                  <p className="text-slate-500">
-                    Clientes minoristas y mayoristas.
-                  </p>
-                </div>
-
-                <button
-                  onClick={
-                    nuevoCliente
-                  }
-                  className="bg-slate-900 text-white px-5 py-3 rounded-xl"
-                >
-                  + Nuevo cliente
-                </button>
-
-              </div>
-
-              {mostrarFormularioCliente && (
-
-                <form
-                  onSubmit={
-                    guardarCliente
-                  }
-                  className="bg-white border p-6 rounded-2xl mt-6 grid md:grid-cols-2 gap-4"
-                >
-
-                  <input
-                    required
-                    placeholder="Nombre"
-                    value={
-                      formularioCliente.nombre
-                    }
-                    onChange={(e) =>
-                      setFormularioCliente({
-                        ...formularioCliente,
-                        nombre:
-                          e.target.value,
-                      })
-                    }
-                    className="border p-3 rounded-xl"
-                  />
-
-                  <input
-                    placeholder="DNI / CUIT"
-                    value={
-                      formularioCliente.dni_cuit
-                    }
-                    onChange={(e) =>
-                      setFormularioCliente({
-                        ...formularioCliente,
-                        dni_cuit:
-                          e.target.value,
-                      })
-                    }
-                    className="border p-3 rounded-xl"
-                  />
-
-                  <input
-                    placeholder="Teléfono"
-                    value={
-                      formularioCliente.telefono
-                    }
-                    onChange={(e) =>
-                      setFormularioCliente({
-                        ...formularioCliente,
-                        telefono:
-                          e.target.value,
-                      })
-                    }
-                    className="border p-3 rounded-xl"
-                  />
-
-                  <input
-                    placeholder="Dirección"
-                    value={
-                      formularioCliente.direccion
-                    }
-                    onChange={(e) =>
-                      setFormularioCliente({
-                        ...formularioCliente,
-                        direccion:
-                          e.target.value,
-                      })
-                    }
-                    className="border p-3 rounded-xl"
-                  />
-
-                  <select
-                    value={
-                      formularioCliente.tipo_cliente
-                    }
-                    onChange={(e) =>
-                      setFormularioCliente({
-                        ...formularioCliente,
-                        tipo_cliente:
-                          e.target.value as TipoVenta,
-                      })
-                    }
-                    className="border p-3 rounded-xl"
-                  >
-                    <option value="MINORISTA">
-                      Minorista
-                    </option>
-                    <option value="MAYORISTA">
-                      Mayorista
-                    </option>
-                  </select>
-
-                  <div className="md:col-span-2 flex gap-3">
-
-                    <button className="bg-slate-900 text-white px-6 py-3 rounded-xl">
-                      Guardar
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMostrarFormularioCliente(
-                          false
-                        )
-                      }
-                      className="border px-6 py-3 rounded-xl"
-                    >
-                      Cancelar
-                    </button>
-
-                  </div>
-
-                </form>
-
-              )}
-
-              <input
-                value={
-                  busquedaCliente
-                }
-                onChange={(e) =>
-                  setBusquedaCliente(
-                    e.target.value
-                  )
-                }
-                placeholder="Buscar cliente..."
-                className="border p-3 rounded-xl mt-6 w-full md:w-96"
-              />
-
-              <div className="bg-white border rounded-2xl mt-5 overflow-x-auto">
-
-                <table className="w-full">
-
-                  <thead className="bg-slate-100">
-
-                    <tr>
-                      <th className="p-4 text-left">
-                        Cliente
-                      </th>
-                      <th className="p-4 text-left">
-                        DNI / CUIT
-                      </th>
-                      <th className="p-4 text-left">
-                        Teléfono
-                      </th>
-                      <th className="p-4 text-left">
-                        Tipo
-                      </th>
-                      <th className="p-4">
-                        Acciones
-                      </th>
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {clientesFiltrados.map(
-                      (cliente) => (
-
-                        <tr
-                          key={cliente.id}
-                          className="border-t"
-                        >
-
-                          <td className="p-4 font-semibold">
-                            {cliente.nombre}
-                          </td>
-
-                          <td className="p-4">
-                            {cliente.dni_cuit ||
-                              '-'}
-                          </td>
-
-                          <td className="p-4">
-                            {cliente.telefono ||
-                              '-'}
-                          </td>
-
-                          <td className="p-4">
-                            {cliente.tipo_cliente}
-                          </td>
-
-                          <td className="p-4">
-
-                            <div className="flex justify-center gap-2">
-
-                              <button
-                                onClick={() =>
-                                  editarCliente(
-                                    cliente
-                                  )
-                                }
-                                className="bg-slate-100 px-4 py-2 rounded-lg"
-                              >
-                                Editar
-                              </button>
-
-                              {usuarioLogueado.rol ===
-                                'Administrador' && (
-
-                                <button
-                                  onClick={() =>
-                                    eliminarCliente(
-                                      cliente
-                                    )
-                                  }
-                                  className="bg-red-100 text-red-700 px-4 py-2 rounded-lg"
-                                >
-                                  Eliminar
-                                </button>
-
-                              )}
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Clientes' && (
+            <Clientes
+              busquedaCliente={busquedaCliente}
+              clientesFiltrados={clientesFiltrados}
+              editarCliente={editarCliente}
+              eliminarCliente={eliminarCliente}
+              formularioCliente={formularioCliente}
+              guardarCliente={guardarCliente}
+              mostrarFormularioCliente={mostrarFormularioCliente}
+              nuevoCliente={nuevoCliente}
+              setBusquedaCliente={setBusquedaCliente}
+              setFormularioCliente={setFormularioCliente}
+              setMostrarFormularioCliente={setMostrarFormularioCliente}
+              usuarioLogueado={usuarioLogueado}
+            />
           )}
 
           {/* ================================================= */}
           {/* PRODUCTOS */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Productos' && (
-
-            <div>
-
-              <div className="flex justify-between">
-
-                <div>
-
-                  <h3 className="text-3xl font-bold">
-                    Productos
-                  </h3>
-
-                  <p className="text-slate-500">
-                    Catálogo, precios y existencias.
-                  </p>
-
-                </div>
-
-                {usuarioLogueado.rol ===
-                  'Administrador' && (
-
-                  <button
-                    onClick={
-                      nuevoProducto
-                    }
-                    className="bg-slate-900 text-white px-5 py-3 rounded-xl"
-                  >
-                    + Nuevo producto
-                  </button>
-
-                )}
-
-              </div>
-
-              {mostrarFormularioProducto && (
-
-                <form
-                  onSubmit={
-                    guardarProducto
-                  }
-                  className="bg-white border rounded-2xl p-6 mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4"
-                >
-
-                  {Object.keys(
-                    formularioProducto
-                  ).map((campo) => (
-
-                    <input
-                      key={campo}
-                      value={
-                        formularioProducto[
-                          campo as keyof FormProducto
-                        ]
-                      }
-                      onChange={(e) =>
-                        setFormularioProducto({
-                          ...formularioProducto,
-                          [campo]:
-                            e.target.value,
-                        })
-                      }
-                      placeholder={
-                        campo.replaceAll(
-                          '_',
-                          ' '
-                        )
-                      }
-                      className="border p-3 rounded-xl"
-                    />
-
-                  ))}
-
-                  <button className="bg-slate-900 text-white p-3 rounded-xl">
-                    Guardar producto
-                  </button>
-
-                </form>
-
-              )}
-
-              <input
-                value={
-                  busquedaProducto
-                }
-                onChange={(e) =>
-                  setBusquedaProducto(
-                    e.target.value
-                  )
-                }
-                placeholder="Buscar producto..."
-                className="border p-3 rounded-xl mt-6 w-full md:w-96"
-              />
-
-              <div className="bg-white border rounded-2xl mt-5 overflow-x-auto">
-
-                <table className="w-full">
-
-                  <thead className="bg-slate-100">
-
-                    <tr>
-                      <th className="p-4 text-left">
-                        Código
-                      </th>
-                      <th className="p-4 text-left">
-                        Producto
-                      </th>
-                      <th className="p-4">
-                        Minorista
-                      </th>
-                      <th className="p-4">
-                        Mayorista
-                      </th>
-                      <th className="p-4">
-                        Stock
-                      </th>
-                      <th className="p-4">
-                        Acción
-                      </th>
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {productosFiltrados.map(
-                      (producto) => (
-
-                        <tr
-                          key={producto.id}
-                          className="border-t"
-                        >
-
-                          <td className="p-4">
-                            {producto.codigo_barras}
-                          </td>
-
-                          <td className="p-4 font-semibold">
-                            {producto.nombre}
-                          </td>
-
-                          <td className="p-4 text-center">
-                            $
-                            {Number(
-                              producto.precio_minorista
-                            ).toLocaleString(
-                              'es-AR'
-                            )}
-                          </td>
-
-                          <td className="p-4 text-center">
-                            $
-                            {Number(
-                              producto.precio_mayorista
-                            ).toLocaleString(
-                              'es-AR'
-                            )}
-                          </td>
-
-                          <td className="p-4 text-center">
-                            {producto.stock}
-                          </td>
-
-                          <td className="p-4 text-center">
-
-                            {usuarioLogueado.rol ===
-                              'Administrador' && (
-
-                              <button
-                                onClick={() =>
-                                  editarProducto(
-                                    producto
-                                  )
-                                }
-                                className="bg-slate-100 px-4 py-2 rounded-lg"
-                              >
-                                Editar
-                              </button>
-
-                            )}
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Productos' && (
+            <Productos
+              rol={usuarioLogueado.rol}
+              nuevoProducto={nuevoProducto}
+              mostrarFormularioProducto={mostrarFormularioProducto}
+              guardarProducto={guardarProducto}
+              formularioProducto={formularioProducto}
+              setFormularioProducto={setFormularioProducto}
+              busquedaProducto={busquedaProducto}
+              setBusquedaProducto={setBusquedaProducto}
+              productosFiltrados={productosFiltrados}
+              editarProducto={editarProducto}
+              cargarProductos={cargarProductos}
+            />
           )}
 
           {/* ================================================= */}
           {/* STOCK */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Stock' && (
-
-            <div>
-
-              <h3 className="text-3xl font-bold">
-                Control de stock
-              </h3>
-
-              <div className="grid xl:grid-cols-3 gap-6 mt-6">
-
-                <form
-                  onSubmit={
-                    registrarMovimiento
-                  }
-                  className="bg-white border rounded-2xl p-6 space-y-4"
-                >
-
-                  <select
-                    value={
-                      formularioMovimiento.producto_id
-                    }
-                    onChange={(e) =>
-                      setFormularioMovimiento({
-                        ...formularioMovimiento,
-                        producto_id:
-                          e.target.value,
-                      })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  >
-
-                    <option value="">
-                      Producto
-                    </option>
-
-                    {productos.map(
-                      (producto) => (
-
-                        <option
-                          key={producto.id}
-                          value={producto.id}
-                        >
-                          {producto.nombre}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                  {productoStockSeleccionado && (
-
-                    <div className="bg-slate-100 p-4 rounded-xl">
-
-                      Stock actual:{' '}
-
-                      <strong>
-                        {productoStockSeleccionado.stock}
-                      </strong>
-
-                    </div>
-
-                  )}
-
-                  <select
-                    value={
-                      formularioMovimiento.tipo
-                    }
-                    onChange={(e) =>
-                      setFormularioMovimiento({
-                        ...formularioMovimiento,
-                        tipo:
-                          e.target.value as TipoMovimiento,
-                      })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  >
-
-                    <option value="ENTRADA">
-                      Entrada
-                    </option>
-
-                    <option value="SALIDA">
-                      Salida
-                    </option>
-
-                    <option value="AJUSTE">
-                      Ajuste
-                    </option>
-
-                  </select>
-
-                  <input
-                    type="number"
-                    placeholder="Cantidad"
-                    value={
-                      formularioMovimiento.cantidad
-                    }
-                    onChange={(e) =>
-                      setFormularioMovimiento({
-                        ...formularioMovimiento,
-                        cantidad:
-                          e.target.value,
-                      })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  />
-
-                  <input
-                    placeholder="Motivo"
-                    value={
-                      formularioMovimiento.motivo
-                    }
-                    onChange={(e) =>
-                      setFormularioMovimiento({
-                        ...formularioMovimiento,
-                        motivo:
-                          e.target.value,
-                      })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  />
-
-                  <button className="w-full bg-slate-900 text-white p-3 rounded-xl">
-                    Registrar movimiento
-                  </button>
-
-                </form>
-
-                <div className="xl:col-span-2 bg-white border rounded-2xl p-6">
-
-                  <input
-                    value={
-                      busquedaStock
-                    }
-                    onChange={(e) =>
-                      setBusquedaStock(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Buscar producto..."
-                    className="border p-3 rounded-xl mb-4"
-                  />
-
-                  {productosStock.map(
-                    (producto) => (
-
-                      <div
-                        key={producto.id}
-                        className="flex justify-between border-b py-3"
-                      >
-
-                        <span className="font-semibold">
-                          {producto.nombre}
-                        </span>
-
-                        <span>
-                          Stock: {producto.stock}
-                        </span>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              </div>
-
-              <div className="bg-white border rounded-2xl p-6 mt-6">
-
-                <h4 className="text-xl font-bold mb-4">
-                  Historial de movimientos
-                </h4>
-
-                {movimientos.map(
-                  (movimiento) => (
-
-                    <div
-                      key={movimiento.id}
-                      className="grid grid-cols-4 gap-3 border-b py-3"
-                    >
-
-                      <span>
-                        {movimiento.producto}
-                      </span>
-
-                      <span>
-                        {movimiento.tipo}
-                      </span>
-
-                      <span>
-                        {movimiento.cantidad}
-                      </span>
-
-                      <span>
-                        {movimiento.stock_anterior}
-                        {' → '}
-                        {movimiento.stock_nuevo}
-                      </span>
-
-                    </div>
-
-                  )
-                )}
-
-              </div>
-
-            </div>
-
+          {seccionActual === 'Stock' && (
+            <Stock
+              rol={usuarioLogueado.rol}
+              registrarMovimiento={registrarMovimiento}
+              formularioMovimiento={formularioMovimiento}
+              setFormularioMovimiento={setFormularioMovimiento}
+              productos={productos}
+              productoStockSeleccionado={productoStockSeleccionado}
+              busquedaStock={busquedaStock}
+              setBusquedaStock={setBusquedaStock}
+              productosStock={productosStock}
+              editandoStockMasivo={editandoStockMasivo}
+              iniciarEdicionStockMasivo={iniciarEdicionStockMasivo}
+              cancelarEdicionStockMasivo={cancelarEdicionStockMasivo}
+              guardarStockMasivo={guardarStockMasivo}
+              guardandoStockMasivo={guardandoStockMasivo}
+              stockEditable={stockEditable}
+              setStockEditable={setStockEditable}
+              movimientos={movimientos}
+            />
           )}
 
 {/* ================================================= */}
 {/* PROVEEDORES */}
 {/* ================================================= */}
 
-{seccionActual ===
-  'Proveedores' && (
-
-  <div>
-
-    <div className="flex justify-between items-center">
-
-      <div>
-
-        <h3 className="text-3xl font-bold">
-          Proveedores
-        </h3>
-
-        <p className="text-slate-500">
-          Administrá los proveedores de la distribuidora.
-        </p>
-
-      </div>
-
-      <button
-        onClick={
-          nuevoProveedor
-        }
-        className="bg-slate-900 text-white px-5 py-3 rounded-xl font-semibold"
-      >
-        + Nuevo proveedor
-      </button>
-
-    </div>
-
-    {mostrarFormularioProveedor && (
-
-      <form
-        onSubmit={
-          guardarProveedor
-        }
-        className="bg-white border rounded-2xl p-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-5"
-      >
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            Nombre
-          </label>
-
-          <input
-            required
-            value={
-              formularioProveedor.nombre
-            }
-            onChange={(e) =>
-              setFormularioProveedor({
-                ...formularioProveedor,
-                nombre:
-                  e.target.value,
-              })
-            }
-            className="w-full border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            CUIT
-          </label>
-
-          <input
-            value={
-              formularioProveedor.cuit
-            }
-            onChange={(e) =>
-              setFormularioProveedor({
-                ...formularioProveedor,
-                cuit:
-                  e.target.value,
-              })
-            }
-            className="w-full border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            Teléfono
-          </label>
-
-          <input
-            value={
-              formularioProveedor.telefono
-            }
-            onChange={(e) =>
-              setFormularioProveedor({
-                ...formularioProveedor,
-                telefono:
-                  e.target.value,
-              })
-            }
-            className="w-full border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            Email
-          </label>
-
-          <input
-            type="email"
-            value={
-              formularioProveedor.email
-            }
-            onChange={(e) =>
-              setFormularioProveedor({
-                ...formularioProveedor,
-                email:
-                  e.target.value,
-              })
-            }
-            className="w-full border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div className="md:col-span-2">
-
-          <label className="font-semibold block mb-2">
-            Dirección
-          </label>
-
-          <input
-            value={
-              formularioProveedor.direccion
-            }
-            onChange={(e) =>
-              setFormularioProveedor({
-                ...formularioProveedor,
-                direccion:
-                  e.target.value,
-              })
-            }
-            className="w-full border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div className="md:col-span-2 flex gap-3">
-
-          <button
-            className="bg-slate-900 text-white px-6 py-3 rounded-xl"
-          >
-            {proveedorEditando
-              ? 'Guardar cambios'
-              : 'Crear proveedor'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMostrarFormularioProveedor(
-                false
-              )
-
-              setProveedorEditando(
-                null
-              )
-            }}
-            className="border px-6 py-3 rounded-xl"
-          >
-            Cancelar
-          </button>
-
-        </div>
-
-      </form>
-
-    )}
-
-    <div className="bg-white border rounded-2xl p-5 mt-6">
-
-      <input
-        value={
-          busquedaProveedor
-        }
-        onChange={(e) =>
-          setBusquedaProveedor(
-            e.target.value
-          )
-        }
-        placeholder="Buscar proveedor..."
-        className="border px-4 py-3 rounded-xl w-full md:w-96"
-      />
-
-    </div>
-
-    <div className="bg-white border rounded-2xl mt-5 overflow-x-auto">
-
-      <table className="w-full">
-
-        <thead className="bg-slate-100">
-
-          <tr>
-
-            <th className="p-4 text-left">
-              Proveedor
-            </th>
-
-            <th className="p-4 text-left">
-              CUIT
-            </th>
-
-            <th className="p-4 text-left">
-              Teléfono
-            </th>
-
-            <th className="p-4 text-left">
-              Dirección
-            </th>
-
-            <th className="p-4 text-left">
-              Email
-            </th>
-
-            <th className="p-4">
-              Acciones
-            </th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {proveedoresFiltrados.map(
-            (proveedor) => (
-
-              <tr
-                key={
-                  proveedor.id
-                }
-                className="border-t"
-              >
-
-                <td className="p-4 font-semibold">
-                  {
-                    proveedor.nombre
-                  }
-                </td>
-
-                <td className="p-4">
-                  {proveedor.cuit ||
-                    '-'}
-                </td>
-
-                <td className="p-4">
-                  {proveedor.telefono ||
-                    '-'}
-                </td>
-
-                <td className="p-4">
-                  {proveedor.direccion ||
-                    '-'}
-                </td>
-
-                <td className="p-4">
-                  {proveedor.email ||
-                    '-'}
-                </td>
-
-                <td className="p-4">
-
-                  <div className="flex justify-center gap-2">
-
-                    <button
-                      onClick={() =>
-                        editarProveedor(
-                          proveedor
-                        )
-                      }
-                      className="bg-slate-100 px-4 py-2 rounded-lg font-semibold"
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        eliminarProveedor(
-                          proveedor
-                        )
-                      }
-                      className="bg-red-100 text-red-700 px-4 py-2 rounded-lg font-semibold"
-                    >
-                      Eliminar
-                    </button>
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            )
+{seccionActual === 'Proveedores' && (
+            <Proveedores
+              busquedaProveedor={busquedaProveedor}
+              editarProveedor={editarProveedor}
+              eliminarProveedor={eliminarProveedor}
+              formularioProveedor={formularioProveedor}
+              guardarProveedor={guardarProveedor}
+              mostrarFormularioProveedor={mostrarFormularioProveedor}
+              nuevoProveedor={nuevoProveedor}
+              proveedorEditando={proveedorEditando}
+              proveedoresFiltrados={proveedoresFiltrados}
+              setBusquedaProveedor={setBusquedaProveedor}
+              setFormularioProveedor={setFormularioProveedor}
+              setMostrarFormularioProveedor={setMostrarFormularioProveedor}
+              setProveedorEditando={setProveedorEditando}
+            />
           )}
-
-        </tbody>
-
-      </table>
-
-      {proveedoresFiltrados.length ===
-        0 && (
-
-        <div className="p-10 text-center text-slate-500">
-          No hay proveedores registrados.
-        </div>
-
-      )}
-
-    </div>
-
-  </div>
-
-)}
 
 {/* ================================================= */}
 {/* COMPRAS */}
 {/* ================================================= */}
 
-{seccionActual ===
-  'Compras' && (
-
-  <div>
-
-    <div>
-
-      <h3 className="text-3xl font-bold">
-        Compras
-      </h3>
-
-      <p className="text-slate-500">
-        Registrá mercadería recibida y actualizá el stock.
-      </p>
-
-    </div>
-
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
-
-      {/* IZQUIERDA */}
-
-      <div className="xl:col-span-2 space-y-5">
-
-        <div className="bg-white border rounded-2xl p-6">
-
-          <h4 className="text-xl font-bold">
-            Nueva compra
-          </h4>
-
-          <div className="grid md:grid-cols-2 gap-4 mt-5">
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Proveedor
-              </label>
-
-              <select
-                value={
-                  proveedorCompra
-                }
-                onChange={(e) =>
-                  setProveedorCompra(
-                    e.target.value
-                  )
-                }
-                className="w-full border px-4 py-3 rounded-xl"
-              >
-
-                <option value="">
-                  Sin proveedor
-                </option>
-
-                {proveedores.map(
-                  (proveedor) => (
-
-                    <option
-                      key={
-                        proveedor.id
-                      }
-                      value={
-                        proveedor.id
-                      }
-                    >
-                      {
-                        proveedor.nombre
-                      }
-                    </option>
-
-                  )
-                )}
-
-              </select>
-
-            </div>
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Producto
-              </label>
-
-              <select
-                value={
-                  productoCompra
-                }
-                onChange={(e) =>
-                  seleccionarProductoCompra(
-                    e.target.value
-                  )
-                }
-                className="w-full border px-4 py-3 rounded-xl"
-              >
-
-                <option value="">
-                  Seleccionar producto
-                </option>
-
-                {productos.map(
-                  (producto) => (
-
-                    <option
-                      key={
-                        producto.id
-                      }
-                      value={
-                        producto.id
-                      }
-                    >
-                      {
-                        producto.nombre
-                      }
-                    </option>
-
-                  )
-                )}
-
-              </select>
-
-            </div>
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Cantidad
-              </label>
-
-              <input
-                type="number"
-                min="1"
-                value={
-                  cantidadCompra
-                }
-                onChange={(e) =>
-                  setCantidadCompra(
-                    e.target.value
-                  )
-                }
-                className="w-full border px-4 py-3 rounded-xl"
-              />
-
-            </div>
-
-            <div>
-
-              <label className="font-semibold block mb-2">
-                Precio de compra
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                value={
-                  precioCompra
-                }
-                onChange={(e) =>
-                  setPrecioCompra(
-                    e.target.value
-                  )
-                }
-                className="w-full border px-4 py-3 rounded-xl"
-              />
-
-            </div>
-
-          </div>
-
-          <button
-            type="button"
-            onClick={
-              agregarProductoCompra
-            }
-            className="bg-slate-900 text-white px-6 py-3 rounded-xl mt-5"
-          >
-            + Agregar producto
-          </button>
-
-        </div>
-
-        {/* DETALLE */}
-
-        <div className="bg-white border rounded-2xl overflow-x-auto">
-
-          <table className="w-full">
-
-            <thead className="bg-slate-100">
-
-              <tr>
-
-                <th className="p-4 text-left">
-                  Producto
-                </th>
-
-                <th className="p-4">
-                  Cantidad
-                </th>
-
-                <th className="p-4">
-                  Costo
-                </th>
-
-                <th className="p-4">
-                  Subtotal
-                </th>
-
-                <th className="p-4">
-                  Acción
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {carritoCompra.map(
-                (item) => (
-
-                  <tr
-                    key={
-                      item.producto.id
-                    }
-                    className="border-t"
-                  >
-
-                    <td className="p-4">
-
-                      <p className="font-semibold">
-                        {
-                          item.producto.nombre
-                        }
-                      </p>
-
-                      <p className="text-xs text-slate-500">
-                        Stock actual: {item.producto.stock}
-                      </p>
-
-                    </td>
-
-                    <td className="p-4">
-
-                      <input
-                        type="number"
-                        min="1"
-                        value={
-                          item.cantidad
-                        }
-                        onChange={(e) =>
-                          cambiarCantidadCompra(
-                            item.producto.id,
-                            Number(
-                              e.target.value
-                            )
-                          )
-                        }
-                        className="w-24 border px-3 py-2 rounded-lg mx-auto block"
-                      />
-
-                    </td>
-
-                    <td className="p-4">
-
-                      <input
-                        type="number"
-                        min="0"
-                        value={
-                          item.precio_compra
-                        }
-                        onChange={(e) =>
-                          cambiarPrecioCompra(
-                            item.producto.id,
-                            Number(
-                              e.target.value
-                            )
-                          )
-                        }
-                        className="w-32 border px-3 py-2 rounded-lg mx-auto block"
-                      />
-
-                    </td>
-
-                    <td className="p-4 text-center font-bold">
-                      $
-                      {(
-                        item.cantidad *
-                        item.precio_compra
-                      ).toLocaleString(
-                        'es-AR'
-                      )}
-                    </td>
-
-                    <td className="p-4 text-center">
-
-                      <button
-                        onClick={() =>
-                          eliminarProductoCompra(
-                            item.producto.id
-                          )
-                        }
-                        className="text-red-600 font-semibold"
-                      >
-                        Quitar
-                      </button>
-
-                    </td>
-
-                  </tr>
-
-                )
-              )}
-
-            </tbody>
-
-          </table>
-
-          {carritoCompra.length ===
-            0 && (
-
-            <div className="p-10 text-center text-slate-500">
-              Todavía no agregaste productos.
-            </div>
-
+{seccionActual === 'Compras' && (
+            <Compras
+              agregarProductoCompra={agregarProductoCompra}
+              cambiarCantidadCompra={cambiarCantidadCompra}
+              cambiarPrecioCompra={cambiarPrecioCompra}
+              cantidadCompra={cantidadCompra}
+              carritoCompra={carritoCompra}
+              compras={compras}
+              confirmarCompra={confirmarCompra}
+              eliminarProductoCompra={eliminarProductoCompra}
+              guardandoCompra={guardandoCompra}
+              observacionCompra={observacionCompra}
+              precioCompra={precioCompra}
+              productoCompra={productoCompra}
+              productos={productos}
+              proveedorCompra={proveedorCompra}
+              proveedores={proveedores}
+              seleccionarProductoCompra={seleccionarProductoCompra}
+              setCantidadCompra={setCantidadCompra}
+              setObservacionCompra={setObservacionCompra}
+              setPrecioCompra={setPrecioCompra}
+              setProveedorCompra={setProveedorCompra}
+              totalCompra={totalCompra}
+            />
           )}
-
-        </div>
-
-      </div>
-
-      {/* RESUMEN */}
-
-      <div className="bg-white border rounded-2xl p-6 h-fit">
-
-        <h4 className="text-2xl font-bold">
-          Resumen
-        </h4>
-
-        <div className="mt-5">
-
-          <label className="font-semibold block mb-2">
-            Observación
-          </label>
-
-          <textarea
-            value={
-              observacionCompra
-            }
-            onChange={(e) =>
-              setObservacionCompra(
-                e.target.value
-              )
-            }
-            placeholder="Ej: Pedido Pepsi semanal"
-            className="w-full border px-4 py-3 rounded-xl min-h-28"
-          />
-
-        </div>
-
-        <div className="border-t mt-6 pt-5">
-
-          <div className="flex justify-between">
-
-            <span>
-              Productos
-            </span>
-
-            <strong>
-              {
-                carritoCompra.length
-              }
-            </strong>
-
-          </div>
-
-          <div className="flex justify-between text-2xl font-bold mt-5 border-t pt-5">
-
-            <span>
-              TOTAL
-            </span>
-
-            <span>
-              $
-              {totalCompra.toLocaleString(
-                'es-AR'
-              )}
-            </span>
-
-          </div>
-
-        </div>
-
-        <button
-          onClick={
-            confirmarCompra
-          }
-          disabled={
-            guardandoCompra ||
-            carritoCompra.length === 0
-          }
-          className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold mt-6 disabled:opacity-40"
-        >
-          {guardandoCompra
-            ? 'Registrando...'
-            : 'Confirmar compra'}
-        </button>
-
-      </div>
-
-    </div>
-
-    {/* HISTORIAL */}
-
-    <div className="bg-white border rounded-2xl mt-6 overflow-x-auto">
-
-      <div className="p-5 border-b">
-
-        <h4 className="text-xl font-bold">
-          Historial de compras
-        </h4>
-
-      </div>
-
-      <table className="w-full">
-
-        <thead className="bg-slate-100">
-
-          <tr>
-
-            <th className="p-4 text-left">
-              Compra
-            </th>
-
-            <th className="p-4 text-left">
-              Proveedor
-            </th>
-
-            <th className="p-4 text-left">
-              Usuario
-            </th>
-
-            <th className="p-4 text-left">
-              Total
-            </th>
-
-            <th className="p-4 text-left">
-              Fecha
-            </th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {compras
-            .slice(0, 15)
-            .map(
-              (compra) => (
-
-                <tr
-                  key={
-                    compra.id
-                  }
-                  className="border-t"
-                >
-
-                  <td className="p-4 font-bold">
-                    #{compra.id}
-                  </td>
-
-                  <td className="p-4">
-                    {compra.proveedor ||
-                      'Sin proveedor'}
-                  </td>
-
-                  <td className="p-4">
-                    {
-                      compra.usuario
-                    }
-                  </td>
-
-                  <td className="p-4 font-bold">
-                    $
-                    {Number(
-                      compra.total
-                    ).toLocaleString(
-                      'es-AR'
-                    )}
-                  </td>
-
-                  <td className="p-4">
-                    {new Date(
-                      compra.fecha
-                    ).toLocaleString(
-                      'es-AR'
-                    )}
-                  </td>
-
-                </tr>
-
-              )
-            )}
-
-        </tbody>
-
-      </table>
-
-      {compras.length === 0 && (
-
-        <div className="p-10 text-center text-slate-500">
-          Todavía no hay compras registradas.
-        </div>
-
-      )}
-
-    </div>
-
-  </div>
-
-)}
 {/* ================================================= */}
 {/* PRECIOS */}
 {/* ================================================= */}
 
-{seccionActual ===
-  'Precios' && (
-
-  <div>
-
-    <div>
-
-      <h3 className="text-3xl font-bold">
-        Precios
-      </h3>
-
-      <p className="text-slate-500">
-        Actualizá costos, precios de venta y controlá los márgenes.
-      </p>
-
-    </div>
-
-    {/* BUSCADOR */}
-
-    <div className="bg-white border rounded-2xl p-5 mt-6">
-
-      <input
-        value={
-          busquedaPrecio
-        }
-        onChange={(e) =>
-          setBusquedaPrecio(
-            e.target.value
-          )
-        }
-        placeholder="Buscar producto..."
-        className="border px-4 py-3 rounded-xl w-full md:w-96"
-      />
-
-    </div>
-
-    {/* TABLA */}
-
-    <div className="bg-white border rounded-2xl mt-5 overflow-x-auto">
-
-      <table className="w-full">
-
-        <thead className="bg-slate-100">
-
-          <tr>
-
-            <th className="p-4 text-left">
-              Producto
-            </th>
-
-            <th className="p-4">
-              Costo
-            </th>
-
-            <th className="p-4">
-              Minorista
-            </th>
-
-            <th className="p-4">
-              Margen
-            </th>
-
-            <th className="p-4">
-              Mayorista
-            </th>
-
-            <th className="p-4">
-              Margen
-            </th>
-
-            <th className="p-4">
-              Acción
-            </th>
-
-          </tr>
-
-        </thead>
-
-        <tbody>
-
-          {productosPrecioFiltrados.map(
-            (producto) => {
-
-              const costo =
-                Number(
-                  obtenerPrecioCampo(
-                    producto,
-                    'precio_compra'
-                  )
-                ) || 0
-
-              const minorista =
-                Number(
-                  obtenerPrecioCampo(
-                    producto,
-                    'precio_minorista'
-                  )
-                ) || 0
-
-              const mayorista =
-                Number(
-                  obtenerPrecioCampo(
-                    producto,
-                    'precio_mayorista'
-                  )
-                ) || 0
-
-              const margenMinorista =
-                calcularMargen(
-                  costo,
-                  minorista
-                )
-
-              const margenMayorista =
-                calcularMargen(
-                  costo,
-                  mayorista
-                )
-
-              const tieneCambios =
-                Boolean(
-                  preciosEditables[
-                    producto.id
-                  ]
-                )
-
-              return (
-
-                <tr
-                  key={
-                    producto.id
-                  }
-                  className="border-t"
-                >
-
-                  {/* PRODUCTO */}
-
-                  <td className="p-4">
-
-                    <p className="font-bold">
-                      {
-                        producto.nombre
-                      }
-                    </p>
-
-                    <p className="text-xs text-slate-500">
-                      {producto.presentacion ||
-                        'Sin presentación'}
-                    </p>
-
-                    <p className="text-xs text-slate-400">
-                      {producto.codigo_barras ||
-                        'Sin código'}
-                    </p>
-
-                  </td>
-
-                  {/* COSTO */}
-
-                  <td className="p-4">
-
-                    <input
-                      type="number"
-                      min="0"
-                      value={
-                        obtenerPrecioCampo(
-                          producto,
-                          'precio_compra'
-                        )
-                      }
-                      onChange={(e) =>
-                        cambiarPrecio(
-                          producto,
-                          'precio_compra',
-                          e.target.value
-                        )
-                      }
-                      className="w-32 border px-3 py-2 rounded-lg"
-                    />
-
-                  </td>
-
-                  {/* MINORISTA */}
-
-                  <td className="p-4">
-
-                    <input
-                      type="number"
-                      min="0"
-                      value={
-                        obtenerPrecioCampo(
-                          producto,
-                          'precio_minorista'
-                        )
-                      }
-                      onChange={(e) =>
-                        cambiarPrecio(
-                          producto,
-                          'precio_minorista',
-                          e.target.value
-                        )
-                      }
-                      className="w-32 border px-3 py-2 rounded-lg"
-                    />
-
-                  </td>
-
-                  {/* MARGEN MINORISTA */}
-
-                  <td className="p-4 text-center">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-bold ${
-                        margenMinorista >
-                        0
-                          ? 'bg-green-100 text-green-700'
-                          : margenMinorista <
-                            0
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {margenMinorista.toFixed(
-                        1
-                      )}
-                      %
-                    </span>
-
-                  </td>
-
-                  {/* MAYORISTA */}
-
-                  <td className="p-4">
-
-                    <input
-                      type="number"
-                      min="0"
-                      value={
-                        obtenerPrecioCampo(
-                          producto,
-                          'precio_mayorista'
-                        )
-                      }
-                      onChange={(e) =>
-                        cambiarPrecio(
-                          producto,
-                          'precio_mayorista',
-                          e.target.value
-                        )
-                      }
-                      className="w-32 border px-3 py-2 rounded-lg"
-                    />
-
-                  </td>
-
-                  {/* MARGEN MAYORISTA */}
-
-                  <td className="p-4 text-center">
-
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-bold ${
-                        margenMayorista >
-                        0
-                          ? 'bg-blue-100 text-blue-700'
-                          : margenMayorista <
-                            0
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {margenMayorista.toFixed(
-                        1
-                      )}
-                      %
-                    </span>
-
-                  </td>
-
-                  {/* GUARDAR */}
-
-                  <td className="p-4 text-center">
-
-                    <button
-                      disabled={
-                        !tieneCambios
-                      }
-                      onClick={() =>
-                        guardarPreciosProducto(
-                          producto
-                        )
-                      }
-                      className={`px-4 py-2 rounded-lg font-semibold ${
-                        tieneCambios
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      Guardar
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              )
-            }
+{seccionActual === 'Precios' && (
+            <Precios
+              busquedaPrecio={busquedaPrecio}
+              calcularMargen={calcularMargen}
+              cambiarPrecio={cambiarPrecio}
+              guardarPreciosProducto={guardarPreciosProducto}
+              obtenerPrecioCampo={obtenerPrecioCampo}
+              preciosEditables={preciosEditables}
+              productosPrecioFiltrados={productosPrecioFiltrados}
+              setBusquedaPrecio={setBusquedaPrecio}
+            />
           )}
-
-        </tbody>
-
-      </table>
-
-      {productosPrecioFiltrados.length ===
-        0 && (
-
-        <div className="p-10 text-center text-slate-500">
-          No se encontraron productos.
-        </div>
-
-      )}
-
-    </div>
-
-  </div>
-
-)}
           {/* ================================================= */}
           {/* REPORTES */}
           {/* ================================================= */}
 
-{seccionActual ===
-  'Reportes' && (
-
-  <div>
-
-    <div>
-
-      <h3 className="text-3xl font-bold">
-        Reportes
-      </h3>
-
-      <p className="text-slate-500">
-        Analizá ventas, compras, formas de pago y stock.
-      </p>
-
-    </div>
-
-    {/* FILTROS */}
-
-    <div className="bg-white border rounded-2xl p-5 mt-6">
-
-      <div className="flex flex-col md:flex-row gap-4 items-end">
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            Desde
-          </label>
-
-          <input
-            type="date"
-            value={
-              reporteDesde
-            }
-            onChange={(e) =>
-              setReporteDesde(
-                e.target.value
-              )
-            }
-            className="border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <div>
-
-          <label className="font-semibold block mb-2">
-            Hasta
-          </label>
-
-          <input
-            type="date"
-            value={
-              reporteHasta
-            }
-            onChange={(e) =>
-              setReporteHasta(
-                e.target.value
-              )
-            }
-            className="border px-4 py-3 rounded-xl"
-          />
-
-        </div>
-
-        <button
-          onClick={() =>
-            cargarReporte()
-          }
-          disabled={
-            cargandoReporte
-          }
-          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
-        >
-          {cargandoReporte
-            ? 'Cargando...'
-            : 'Generar reporte'}
-        </button>
-
-      </div>
-
-    </div>
-
-    {reporte && (
-
-      <>
-
-        {/* TARJETAS */}
-
-       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mt-6">
-
-  <div className="bg-white border rounded-2xl p-6">
-
-    <p className="text-slate-500">
-      Ventas
-    </p>
-
-    <p className="text-3xl font-bold mt-1">
-      $
-      {Number(
-        reporte.ventas.total
-      ).toLocaleString(
-        'es-AR'
-      )}
-    </p>
-
-    <p className="text-sm text-slate-500 mt-2">
-      {reporte.ventas.cantidad} ventas
-    </p>
-
-  </div>
-
-  <div className="bg-white border rounded-2xl p-6">
-
-    <p className="text-slate-500">
-      Costo vendido
-    </p>
-
-    <p className="text-3xl font-bold mt-1">
-      $
-      {Number(
-        reporte.rentabilidad
-          .costo_vendido
-      ).toLocaleString(
-        'es-AR'
-      )}
-    </p>
-
-    <p className="text-xs text-slate-400 mt-2">
-      Costo histórico de lo vendido
-    </p>
-
-  </div>
-
-  <div className="bg-white border rounded-2xl p-6">
-
-    <p className="text-slate-500">
-      Ganancia bruta
-    </p>
-
-    <p
-      className={`text-3xl font-bold mt-1 ${
-        reporte.rentabilidad
-          .ganancia_bruta >= 0
-          ? 'text-green-700'
-          : 'text-red-700'
-      }`}
-    >
-      $
-      {Number(
-        reporte.rentabilidad
-          .ganancia_bruta
-      ).toLocaleString(
-        'es-AR'
-      )}
-    </p>
-
-    <p className="text-xs text-slate-400 mt-2">
-      Venta menos costo vendido
-    </p>
-
-  </div>
-
-  <div className="bg-white border rounded-2xl p-6">
-
-    <p className="text-slate-500">
-      Margen
-    </p>
-
-    <p
-      className={`text-3xl font-bold mt-1 ${
-        reporte.rentabilidad
-          .margen >= 0
-          ? 'text-blue-700'
-          : 'text-red-700'
-      }`}
-    >
-      {Number(
-        reporte.rentabilidad
-          .margen
-      ).toFixed(1)}
-      %
-    </p>
-
-    <p className="text-xs text-slate-400 mt-2">
-      Sobre ventas del período
-    </p>
-
-  </div>
-
-</div>
-
-        {/* PRODUCTOS + FORMAS DE PAGO */}
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
-
-          <div className="bg-white border rounded-2xl overflow-hidden">
-
-            <div className="p-5 border-b">
-
-              <h4 className="text-xl font-bold">
-                Productos más vendidos
-              </h4>
-
-            </div>
-
-            <table className="w-full">
-
-              <thead className="bg-slate-100">
-
-                <tr>
-
-                  <th className="p-3 text-left">
-                    Producto
-                  </th>
-
-                  <th className="p-3 text-center">
-                    Cantidad
-                  </th>
-
-                  <th className="p-3 text-right">
-                    Total
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {reporte.productos_mas_vendidos.map(
-                  (producto) => (
-
-                    <tr
-                      key={
-                        producto.id
-                      }
-                      className="border-t"
-                    >
-
-                      <td className="p-3">
-
-                        <p className="font-semibold">
-                          {
-                            producto.nombre
-                          }
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-                          {
-                            producto.presentacion
-                          }
-                        </p>
-
-                      </td>
-
-                      <td className="p-3 text-center font-bold">
-                        {
-                          producto.cantidad_vendida
-                        }
-                      </td>
-
-                      <td className="p-3 text-right font-bold">
-                        $
-                        {Number(
-                          producto.total_vendido
-                        ).toLocaleString(
-                          'es-AR'
-                        )}
-                      </td>
-
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-            {reporte.productos_mas_vendidos.length ===
-              0 && (
-
-              <div className="p-8 text-center text-slate-500">
-                No hubo ventas en este período.
-              </div>
-
-            )}
-
-          </div>
-
-          <div className="bg-white border rounded-2xl overflow-hidden">
-
-            <div className="p-5 border-b">
-
-              <h4 className="text-xl font-bold">
-                Formas de pago
-              </h4>
-
-            </div>
-
-            <table className="w-full">
-
-              <thead className="bg-slate-100">
-
-                <tr>
-
-                  <th className="p-3 text-left">
-                    Forma
-                  </th>
-
-                  <th className="p-3 text-center">
-                    Ventas
-                  </th>
-
-                  <th className="p-3 text-right">
-                    Total
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {reporte.ventas_por_pago.map(
-                  (pago) => (
-
-                    <tr
-                      key={
-                        pago.forma_pago
-                      }
-                      className="border-t"
-                    >
-
-                      <td className="p-3 font-semibold">
-                        {
-                          pago.forma_pago
-                        }
-                      </td>
-
-                      <td className="p-3 text-center">
-                        {
-                          pago.cantidad
-                        }
-                      </td>
-
-                      <td className="p-3 text-right font-bold">
-                        $
-                        {Number(
-                          pago.total
-                        ).toLocaleString(
-                          'es-AR'
-                        )}
-                      </td>
-
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-        {/* ================================================= */}
-        {/* PRODUCTOS MÁS RENTABLES */}
-        {/* ================================================= */}
-
-        <div className="bg-white border rounded-2xl mt-6 overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h4 className="text-xl font-bold">
-              Productos más rentables
-            </h4>
-
-            <p className="text-sm text-slate-500 mt-1">
-              Productos ordenados por la ganancia generada en el período.
-            </p>
-
-          </div>
-
-          <div className="overflow-x-auto">
-
-            <table className="w-full">
-
-              <thead className="bg-slate-100">
-
-                <tr>
-
-                  <th className="p-4 text-left">
-                    Producto
-                  </th>
-
-                  <th className="p-4 text-center">
-                    Vendido
-                  </th>
-
-                  <th className="p-4 text-right">
-                    Facturación
-                  </th>
-
-                  <th className="p-4 text-right">
-                    Costo
-                  </th>
-
-                  <th className="p-4 text-right">
-                    Ganancia
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {reporte.productos_mas_rentables.map(
-                  (producto) => (
-
-                    <tr
-                      key={producto.id}
-                      className="border-t"
-                    >
-
-                      <td className="p-4">
-
-                        <p className="font-semibold">
-                          {producto.nombre}
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-                          {producto.presentacion ||
-                            'Sin presentación'}
-                        </p>
-
-                      </td>
-
-                      <td className="p-4 text-center font-bold">
-                        {producto.cantidad_vendida}
-                      </td>
-
-                      <td className="p-4 text-right">
-                        $
-                        {Number(
-                          producto.total_vendido
-                        ).toLocaleString(
-                          'es-AR'
-                        )}
-                      </td>
-
-                      <td className="p-4 text-right">
-                        $
-                        {Number(
-                          producto.costo_total
-                        ).toLocaleString(
-                          'es-AR'
-                        )}
-                      </td>
-
-                      <td
-                        className={`p-4 text-right font-bold ${
-                          Number(
-                            producto.ganancia
-                          ) >= 0
-                            ? 'text-green-700'
-                            : 'text-red-700'
-                        }`}
-                      >
-                        $
-                        {Number(
-                          producto.ganancia
-                        ).toLocaleString(
-                          'es-AR'
-                        )}
-                      </td>
-
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-          {reporte.productos_mas_rentables.length ===
-            0 && (
-
-            <div className="p-10 text-center text-slate-500">
-              No hay datos de rentabilidad para este período.
-            </div>
-
+{seccionActual === 'Reportes' && (
+            <Reportes
+              cargandoReporte={cargandoReporte}
+              cargarReporte={cargarReporte}
+              reporte={reporte}
+              reporteDesde={reporteDesde}
+              reporteHasta={reporteHasta}
+              setReporteDesde={setReporteDesde}
+              setReporteHasta={setReporteHasta}
+            />
           )}
-
-        </div>
-
-        {/* ================================================= */}
-        {/* VENTAS POR DIA */}
-        {/* ================================================= */}
-
-
-        <div className="bg-white border rounded-2xl mt-6 overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h4 className="text-xl font-bold">
-              Ventas por día
-            </h4>
-
-          </div>
-
-          <table className="w-full">
-
-            <thead className="bg-slate-100">
-
-              <tr>
-
-                <th className="p-4 text-left">
-                  Fecha
-                </th>
-
-                <th className="p-4 text-center">
-                  Cantidad de ventas
-                </th>
-
-                <th className="p-4 text-right">
-                  Total vendido
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {reporte.ventas_por_dia.map(
-                (dia) => (
-
-                  <tr
-                    key={
-                      dia.fecha
-                    }
-                    className="border-t"
-                  >
-
-                    <td className="p-4">
-                      {new Date(
-                        `${dia.fecha}T00:00:00`
-                      ).toLocaleDateString(
-                        'es-AR'
-                      )}
-                    </td>
-
-                    <td className="p-4 text-center font-bold">
-                      {
-                        dia.cantidad
-                      }
-                    </td>
-
-                    <td className="p-4 text-right font-bold">
-                      $
-                      {Number(
-                        dia.total
-                      ).toLocaleString(
-                        'es-AR'
-                      )}
-                    </td>
-
-                  </tr>
-
-                )
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-        {/* STOCK BAJO */}
-
-        <div className="bg-white border rounded-2xl mt-6 overflow-hidden">
-
-          <div className="p-5 border-b">
-
-            <h4 className="text-xl font-bold">
-              Productos con stock bajo
-            </h4>
-
-          </div>
-
-          <table className="w-full">
-
-            <thead className="bg-slate-100">
-
-              <tr>
-
-                <th className="p-4 text-left">
-                  Producto
-                </th>
-
-                <th className="p-4 text-center">
-                  Stock
-                </th>
-
-                <th className="p-4 text-center">
-                  Mínimo
-                </th>
-
-                <th className="p-4 text-center">
-                  Estado
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {reporte.stock_bajo.map(
-                (producto) => (
-
-                  <tr
-                    key={
-                      producto.id
-                    }
-                    className="border-t"
-                  >
-
-                    <td className="p-4">
-
-                      <p className="font-semibold">
-                        {
-                          producto.nombre
-                        }
-                      </p>
-
-                      <p className="text-xs text-slate-500">
-                        {
-                          producto.presentacion
-                        }
-                      </p>
-
-                    </td>
-
-                    <td className="p-4 text-center font-bold">
-                      {
-                        producto.stock
-                      }
-                    </td>
-
-                    <td className="p-4 text-center">
-                      {
-                        producto.stock_minimo
-                      }
-                    </td>
-
-                    <td className="p-4 text-center">
-
-                      <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">
-                        REPONER
-                      </span>
-
-                    </td>
-
-                  </tr>
-
-                )
-              )}
-
-            </tbody>
-
-          </table>
-
-          {reporte.stock_bajo.length ===
-            0 && (
-
-            <div className="p-8 text-center text-slate-500">
-              No hay productos con stock bajo.
-            </div>
-
-          )}
-
-        </div>
-
-      </>
-
-    )}
-
-  </div>
-
-)}
 
           {/* ================================================= */}
           {/* CONFIGURACION */}
           {/* ================================================= */}
 
-          {seccionActual ===
-            'Configuracion' && (
-
-            <div>
-
-              <div>
-
-                <h3 className="text-3xl font-bold">
-                  Configuración
-                </h3>
-
-                <p className="text-slate-500 mt-1">
-                  Datos generales de Hermanos del Norte.
-                </p>
-
-              </div>
-
-              <form
-                onSubmit={
-                  guardarConfiguracion
-                }
-                className="bg-white border rounded-2xl p-6 mt-6 max-w-4xl"
-              >
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                  <div className="md:col-span-2">
-
-                    <label className="font-semibold block mb-2">
-                      Nombre de la empresa
-                    </label>
-
-                    <input
-                      required
-                      value={
-                        configuracion.nombre_empresa
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          nombre_empresa:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      CUIT
-                    </label>
-
-                    <input
-                      value={
-                        configuracion.cuit
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          cuit:
-                            e.target.value,
-                        })
-                      }
-                      placeholder="Ej: 20-12345678-9"
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Teléfono
-                    </label>
-
-                    <input
-                      value={
-                        configuracion.telefono
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          telefono:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Email
-                    </label>
-
-                    <input
-                      type="email"
-                      value={
-                        configuracion.email
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          email:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div>
-
-                    <label className="font-semibold block mb-2">
-                      Alias de pago
-                    </label>
-
-                    <input
-                      value={
-                        configuracion.alias_pago
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          alias_pago:
-                            e.target.value,
-                        })
-                      }
-                      placeholder="Alias para transferencias"
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                  <div className="md:col-span-2">
-
-                    <label className="font-semibold block mb-2">
-                      Dirección
-                    </label>
-
-                    <input
-                      value={
-                        configuracion.direccion
-                      }
-                      onChange={(e) =>
-                        setConfiguracion({
-                          ...configuracion,
-                          direccion:
-                            e.target.value,
-                        })
-                      }
-                      className="w-full border px-4 py-3 rounded-xl"
-                    />
-
-                  </div>
-
-                </div>
-
-                <div className="border-t mt-6 pt-6 flex items-center justify-between gap-4">
-
-                  <div>
-
-                    <p className="font-semibold">
-                      Datos de la empresa
-                    </p>
-
-                    <p className="text-sm text-slate-500">
-                      Más adelante estos datos se podrán usar en tickets y comprobantes.
-                    </p>
-
-                  </div>
-
-                  <button
-                    disabled={
-                      guardandoConfiguracion
-                    }
-                    className="bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
-                  >
-                    {guardandoConfiguracion
-                      ? 'Guardando...'
-                      : 'Guardar configuración'}
-                  </button>
-
-                </div>
-
-              </form>
-
-            </div>
-
+          {seccionActual === 'Configuracion' && (
+            <Configuracion
+              configuracion={configuracion}
+              guardandoConfiguracion={guardandoConfiguracion}
+              guardarConfiguracion={guardarConfiguracion}
+              setConfiguracion={setConfiguracion}
+            />
           )}
 
         </main>
@@ -6585,31 +2693,5 @@ const proveedoresFiltrados =
 }
 
 
-
-// =====================================================
-// TARJETA DEL DASHBOARD
-// =====================================================
-
-function Tarjeta({
-  titulo,
-  valor,
-}: {
-  titulo: string
-  valor: number
-}) {
-  return (
-    <div className="bg-white border rounded-2xl p-6">
-
-      <p className="text-slate-500">
-        {titulo}
-      </p>
-
-      <p className="text-3xl font-bold mt-1">
-        {valor}
-      </p>
-
-    </div>
-  )
-}
 
 export default App
