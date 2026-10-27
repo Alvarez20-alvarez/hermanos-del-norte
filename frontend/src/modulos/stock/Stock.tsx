@@ -1,5 +1,4 @@
 import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
-import Swal from 'sweetalert2'
 import EscanerCodigo from '../../componentes/EscanerCodigo'
 import type {
   FormMovimiento,
@@ -48,17 +47,6 @@ export default function Stock({
   setStockEditable,
   movimientos,
 }: Props) {
-  // Usa SweetAlert2 en lugar del alert nativo del navegador.
-  const alert = (mensaje: unknown) => {
-    void Swal.fire({
-      title: 'Hermanos del Norte',
-      text: String(mensaje),
-      icon: 'info',
-      confirmButtonText: 'Aceptar',
-      confirmButtonColor: '#2563eb',
-    })
-  }
-
   const puedeEditarMasivo = rol === 'Repositor' || rol === 'Administrador'
   const [escanerAbierto, setEscanerAbierto] = useState(false)
   const [pagina, setPagina] = useState(1)

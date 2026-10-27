@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import Swal from 'sweetalert2'
 import { API } from '../../config/api'
 import type {
   Cliente,
@@ -35,17 +34,6 @@ export default function Pedidos({
   usuario,
   cargarClientes,
 }: Props) {
-  // Usa SweetAlert2 en lugar del alert nativo del navegador.
-  const alert = (mensaje: unknown) => {
-    void Swal.fire({
-      title: 'Hermanos del Norte',
-      text: String(mensaje),
-      icon: 'info',
-      confirmButtonText: 'Aceptar',
-      confirmButtonColor: '#2563eb',
-    })
-  }
-
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [cargando, setCargando] = useState(false)
   const [guardando, setGuardando] = useState(false)

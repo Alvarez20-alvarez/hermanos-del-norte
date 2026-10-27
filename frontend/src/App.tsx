@@ -54,33 +54,6 @@ import type {
 // =====
 function App() {
 
-  // Mensajes visuales del sistema (evita los alert/confirm nativos del navegador)
-  const alert = (mensaje: unknown) => {
-    void Swal.fire({
-      title: 'Hermanos del Norte',
-      text: String(mensaje),
-      icon: 'info',
-      confirmButtonText: 'Aceptar',
-      confirmButtonColor: '#2563eb',
-    })
-  }
-
-  const confirmarAccion = async (mensaje: string) => {
-    const resultado = await Swal.fire({
-      title: 'Confirmar acción',
-      text: mensaje,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Confirmar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#2563eb',
-      cancelButtonColor: '#64748b',
-      reverseButtons: true,
-    })
-
-    return resultado.isConfirmed
-  }
-
   // ========================
   // CONFIGURACION - ESTADOS
   // ========================
@@ -241,7 +214,7 @@ const [
     setSeccionActual,
   ] = useState<Seccion>('Inicio')
 
-  const [menuAbierto, setMenuAbierto] = useState(false)
+  const [menuAbierto, setMenuAbierto] = useState(true)
 
   // ========
   // PRODUCTOS
@@ -338,7 +311,7 @@ const [
       return
     }
 
-    if (!(await confirmarAccion(`¿Guardar ${cambios.length} cambios de stock?`))) {
+    if (!window.confirm(`¿Guardar ${cambios.length} cambios de stock?`)) {
       return
     }
 
@@ -539,9 +512,9 @@ const eliminarProveedor = async (
   proveedor: Proveedor
 ) => {
   if (
-    !(await confirmarAccion(
+    !window.confirm(
       `¿Eliminar al proveedor ${proveedor.nombre}?`
-    ))
+    )
   ) {
     return
   }
@@ -1135,9 +1108,9 @@ useEffect(() => {
     cliente: Cliente
   ) => {
     if (
-      !(await confirmarAccion(
+      !window.confirm(
         `¿Eliminar a ${cliente.nombre}?`
-      ))
+      )
     ) {
       return
     }
@@ -1272,9 +1245,9 @@ useEffect(() => {
         : 'desactivar'
 
     if (
-      !(await confirmarAccion(
+      !window.confirm(
         `¿Seguro que querés ${accion} a ${empleado.nombre}?`
-      ))
+      )
     ) {
       return
     }
@@ -1726,7 +1699,7 @@ const totalCompra =
     0
   )
 
-const confirmarVenta = async (dineroRecibido = 0, cajaId?: number): Promise<boolean> => {
+const confirmarVenta = async (dineroRecibido = 0): Promise<boolean> => {
   if (carrito.length === 0) {
     await Swal.fire('Venta vacía', 'No hay productos en la venta.', 'warning')
     return false
@@ -1759,8 +1732,6 @@ const confirmarVenta = async (dineroRecibido = 0, cajaId?: number): Promise<bool
           producto_id: item.producto.id,
           cantidad: item.cantidad,
         })),
-        caja_id: cajaId ?? null,
-        dinero_recibido: formaPago === 'EFECTIVO' ? dineroRecibido : 0,
       }),
     })
 
@@ -1836,11 +1807,11 @@ const confirmarCompra = async () => {
   }
 
   if (
-    !(await confirmarAccion(
+    !window.confirm(
       `¿Registrar compra por $${totalCompra.toLocaleString(
         'es-AR'
       )}?`
-    ))
+    )
   ) {
     return
   }
@@ -2385,8 +2356,8 @@ const proveedoresFiltrados =
 
   if (usuarioLogueado.rol === 'Cajero' && seccionActual === 'Ventas') {
     return (
-      <div className="hdn-app min-h-screen">
-        <div className="bg-[#08111f] text-white px-4 sm:px-8 py-4 flex items-center justify-between gap-4 border-b border-white/10 shadow-lg">
+      <div className="min-h-screen bg-slate-100">
+        <div className="bg-slate-950 text-white px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
           <div>
             <div className="font-black text-lg">HERMANOS DEL NORTE · CAJA</div>
             <div className="text-sm text-slate-300">{usuarioLogueado.nombre}</div>
@@ -2438,7 +2409,7 @@ const proveedoresFiltrados =
   // ===================================================
 
   return (
-    <div className="hdn-app min-h-screen flex">
+    <div className="min-h-screen bg-slate-100 flex">
 
       <Sidebar
         secciones={seccionesPermitidas}
@@ -2457,7 +2428,7 @@ const proveedoresFiltrados =
           abrirMenu={() => setMenuAbierto(true)}
         />
 
-        <main className="p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto">
+        <main className="p-8">
 
           {/* ================================================= */}
           {/* INICIO */}

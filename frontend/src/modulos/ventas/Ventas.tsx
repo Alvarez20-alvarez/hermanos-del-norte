@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import type { FormaPago, TipoVenta } from '../../tipos'
-import { API } from '../../config/api'
 
 type Props = {
   ticketVenta: any
@@ -14,7 +13,7 @@ type Props = {
   clienteVenta: any
   clientes: any[]
   codigoVenta: any
-  confirmarVenta: (dineroRecibido?: number, cajaId?: number) => Promise<boolean>
+  confirmarVenta: (dineroRecibido?: number) => Promise<boolean>
   descuento: any
   descuentoNumero: number
   descuentoImporte: number
@@ -35,60 +34,42 @@ type Props = {
   salirDeCaja?: () => void
 }
 
-type CajaServidor = {
-  id: number
-  empleado_id: number
-  usuario: string
-  monto_inicial: number
-  ventas_efectivo: number
-  movimientos_efectivo: number
-  esperado_actual: number
-  monto_contado: number | null
-  monto_esperado: number | null
-  diferencia: number | null
-  estado: 'ABIERTA' | 'CERRADA'
-  abierta_en: string
-  cerrada_en: string | null
+type CajaLocal = {
+  abierta: boolean
+  fondoInicial: number
+  ventasEfectivo: number
+  abiertaEn: string
 }
 
 const dinero = (valor: number) => `$${Number(valor || 0).toLocaleString('es-AR')}`
 
 export default function Ventas(p: Props) {
-  const [caja, setCaja] = useState<CajaServidor | null>(null)
-  const [cargandoCaja, setCargandoCaja] = useState(true)
+  const fechaClave = new Date().toISOString().slice(0, 10)
+  const usuarioClave = p.usuarioLogueado?.usuario || 'cajero'
+  const claveCaja = `hdn_caja_${fechaClave}_${usuarioClave}`
+
+  const [caja, setCaja] = useState<CajaLocal | null>(null)
   const [montoApertura, setMontoApertura] = useState('')
   const [dineroRecibido, setDineroRecibido] = useState('')
   const [efectivoContado, setEfectivoContado] = useState('')
 
-  const cargarCajaAbierta = async () => {
-    const empleadoId = Number(p.usuarioLogueado?.id)
-    if (!empleadoId) {
-      setCaja(null)
-      setCargandoCaja(false)
-      return
-    }
+  useEffect(() => {
+    const guardada = localStorage.getItem(claveCaja)
+    if (!guardada) return
 
     try {
-      setCargandoCaja(true)
-      const respuesta = await fetch(`${API}/caja/abierta/${empleadoId}`)
-      const datos = await respuesta.json()
-
-      if (!respuesta.ok) {
-        throw new Error(datos.mensaje || 'No se pudo consultar la caja')
-      }
-
-      setCaja(datos.caja || null)
-    } catch (error: any) {
-      setCaja(null)
-      await Swal.fire('Caja', error.message || 'No se pudo consultar la caja abierta.', 'error')
-    } finally {
-      setCargandoCaja(false)
+      const datos = JSON.parse(guardada) as CajaLocal
+      if (datos.abierta) setCaja(datos)
+    } catch {
+      localStorage.removeItem(claveCaja)
     }
-  }
+  }, [claveCaja])
 
-  useEffect(() => {
-    void cargarCajaAbierta()
-  }, [p.usuarioLogueado?.id])
+  const guardarCaja = (nueva: CajaLocal | null) => {
+    setCaja(nueva)
+    if (nueva) localStorage.setItem(claveCaja, JSON.stringify(nueva))
+    else localStorage.removeItem(claveCaja)
+  }
 
   const abrirCaja = async () => {
     const monto = Number(montoApertura)
@@ -108,33 +89,17 @@ export default function Ventas(p: Props) {
 
     if (!resultado.isConfirmed) return
 
-    try {
-      const respuesta = await fetch(`${API}/caja/abrir`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          empleado_id: Number(p.usuarioLogueado?.id),
-          usuario: p.usuarioLogueado?.usuario,
-          monto_inicial: monto,
-        }),
-      })
-
-      const datos = await respuesta.json()
-      if (!respuesta.ok) {
-        if (datos.caja) setCaja(datos.caja)
-        throw new Error(datos.mensaje || 'No se pudo abrir la caja')
-      }
-
-      setCaja(datos.caja)
-      setMontoApertura('')
-      await Swal.fire('Caja abierta', `La caja comenzó con ${dinero(monto)}.`, 'success')
-    } catch (error: any) {
-      await Swal.fire('No se pudo abrir la caja', error.message || 'Intentá nuevamente.', 'error')
-    }
+    guardarCaja({
+      abierta: true,
+      fondoInicial: monto,
+      ventasEfectivo: 0,
+      abiertaEn: new Date().toISOString(),
+    })
+    setMontoApertura('')
   }
 
   const esperadoEnCaja = useMemo(
-    () => Number(caja?.esperado_actual || caja?.monto_inicial || 0),
+    () => (caja?.fondoInicial || 0) + (caja?.ventasEfectivo || 0),
     [caja]
   )
 
@@ -144,11 +109,6 @@ export default function Ventas(p: Props) {
     p.formaPago === 'EFECTIVO' && p.totalVenta > 0 && recibidoNumero < p.totalVenta
 
   const finalizarVenta = async () => {
-    if (!caja) {
-      await Swal.fire('Caja cerrada', 'Debés abrir la caja antes de registrar una venta.', 'warning')
-      return
-    }
-
     if (p.formaPago === 'EFECTIVO' && faltaEfectivo) {
       await Swal.fire({
         title: 'Dinero insuficiente',
@@ -158,11 +118,14 @@ export default function Ventas(p: Props) {
       return
     }
 
-    const correcta = await p.confirmarVenta(recibidoNumero, caja.id)
+    const correcta = await p.confirmarVenta(recibidoNumero)
     if (!correcta) return
 
+    if (p.formaPago === 'EFECTIVO' && caja) {
+      guardarCaja({ ...caja, ventasEfectivo: caja.ventasEfectivo + p.totalVenta })
+    }
+
     setDineroRecibido('')
-    await cargarCajaAbierta()
   }
 
   const cerrarCaja = async () => {
@@ -179,8 +142,8 @@ export default function Ventas(p: Props) {
       title: 'Cerrar caja',
       html: `
         <div style="text-align:left;line-height:1.8">
-          <div>Fondo inicial: <b>${dinero(caja.monto_inicial)}</b></div>
-          <div>Ventas en efectivo: <b>${dinero(caja.ventas_efectivo)}</b></div>
+          <div>Fondo inicial: <b>${dinero(caja.fondoInicial)}</b></div>
+          <div>Ventas en efectivo: <b>${dinero(caja.ventasEfectivo)}</b></div>
           <div>Esperado: <b>${dinero(esperadoEnCaja)}</b></div>
           <div>Contado: <b>${dinero(contado)}</b></div>
           <div>Diferencia: <b>${diferencia >= 0 ? '+' : '-'}${dinero(Math.abs(diferencia))}</b></div>
@@ -194,32 +157,12 @@ export default function Ventas(p: Props) {
 
     if (!resultado.isConfirmed) return
 
-    try {
-      const respuesta = await fetch(`${API}/caja/${caja.id}/cerrar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ monto_contado: contado }),
-      })
-      const datos = await respuesta.json()
+    guardarCaja(null)
+    setEfectivoContado('')
+    setDineroRecibido('')
 
-      if (!respuesta.ok) {
-        throw new Error(datos.mensaje || 'No se pudo cerrar la caja')
-      }
-
-      const cajaCerrada = datos.caja as CajaServidor
-      setCaja(null)
-      setEfectivoContado('')
-      setDineroRecibido('')
-
-      await Swal.fire({
-        title: 'Caja cerrada',
-        html: `Esperado: <b>${dinero(cajaCerrada.monto_esperado || 0)}</b><br/>Contado: <b>${dinero(cajaCerrada.monto_contado || 0)}</b><br/>Diferencia: <b>${dinero(cajaCerrada.diferencia || 0)}</b>`,
-        icon: Number(cajaCerrada.diferencia || 0) === 0 ? 'success' : 'warning',
-      })
-      p.salirDeCaja?.()
-    } catch (error: any) {
-      await Swal.fire('No se pudo cerrar la caja', error.message || 'Intentá nuevamente.', 'error')
-    }
+    await Swal.fire('Caja cerrada', 'El turno quedó cerrado correctamente.', 'success')
+    p.salirDeCaja?.()
   }
 
   const imprimirTicket = () => {
@@ -233,17 +176,6 @@ export default function Ventas(p: Props) {
     ventana.document.close()
     ventana.focus()
     setTimeout(() => ventana.print(), 300)
-  }
-
-  if (cargandoCaja) {
-    return (
-      <div className="min-h-[70vh] grid place-items-center">
-        <div className="bg-white border rounded-3xl p-8 text-center shadow-sm">
-          <div className="text-xl font-bold">Consultando caja...</div>
-          <div className="text-slate-500 mt-2">Verificando si el cajero tiene un turno abierto.</div>
-        </div>
-      </div>
-    )
   }
 
   if (!caja) {
@@ -296,11 +228,11 @@ export default function Ventas(p: Props) {
         <div className="flex flex-wrap gap-2">
           <div className="bg-white border rounded-xl px-4 py-2">
             <div className="text-xs text-slate-500">Caja inicial</div>
-            <div className="font-black">{dinero(caja.monto_inicial)}</div>
+            <div className="font-black">{dinero(caja.fondoInicial)}</div>
           </div>
           <div className="bg-white border rounded-xl px-4 py-2">
             <div className="text-xs text-slate-500">Efectivo vendido</div>
-            <div className="font-black">{dinero(caja.ventas_efectivo)}</div>
+            <div className="font-black">{dinero(caja.ventasEfectivo)}</div>
           </div>
           <button
             type="button"
@@ -456,8 +388,8 @@ export default function Ventas(p: Props) {
         <h4 className="text-xl font-bold">Cierre de caja</h4>
         <p className="text-slate-500 mt-1">Al finalizar el turno, contá el efectivo real y comparalo con el sistema.</p>
         <div className="grid md:grid-cols-4 gap-4 mt-5 items-end">
-          <div><div className="text-sm text-slate-500">Fondo inicial</div><div className="text-xl font-black">{dinero(caja.monto_inicial)}</div></div>
-          <div><div className="text-sm text-slate-500">Ventas efectivo</div><div className="text-xl font-black">{dinero(caja.ventas_efectivo)}</div></div>
+          <div><div className="text-sm text-slate-500">Fondo inicial</div><div className="text-xl font-black">{dinero(caja.fondoInicial)}</div></div>
+          <div><div className="text-sm text-slate-500">Ventas efectivo</div><div className="text-xl font-black">{dinero(caja.ventasEfectivo)}</div></div>
           <div><div className="text-sm text-slate-500">Esperado</div><div className="text-xl font-black">{dinero(esperadoEnCaja)}</div></div>
           <div>
             <label className="text-sm font-semibold block mb-1">Efectivo contado</label>
