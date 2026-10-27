@@ -9,6 +9,7 @@ import productosRoutes from './modulos/productos/productos.js'
 import clientesRoutes from './modulos/clientes/clientes.js'
 import stockRoutes from './modulos/stock/stock.js'
 import ventasRoutes from './modulos/ventas/ventas.js'
+import cajaRoutes from './modulos/caja/caja.js'
 import pedidosRoutes from './modulos/pedidos/pedidos.js'
 import proveedoresRoutes from './modulos/proveedores/proveedores.js'
 import comprasRoutes from './modulos/compras/compras.js'
@@ -29,6 +30,7 @@ app.use(productosRoutes)
 app.use(clientesRoutes)
 app.use(stockRoutes)
 app.use(ventasRoutes)
+app.use(cajaRoutes)
 app.use(pedidosRoutes)
 app.use(proveedoresRoutes)
 app.use(comprasRoutes)

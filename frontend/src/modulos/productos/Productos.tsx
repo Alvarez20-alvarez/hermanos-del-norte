@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from 'react'
 import { API } from '../../config/api'
+import Swal from 'sweetalert2'
 import EscanerCodigo from '../../componentes/EscanerCodigo'
 import type { FormProducto, Producto, Rol } from '../../tipos'
 
@@ -55,6 +56,13 @@ export default function Productos({
   const [escanerAbierto, setEscanerAbierto] = useState(false)
   const [productoEscaneandoId, setProductoEscaneandoId] =
     useState<number | null>(null)
+
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState(10)
+
+  const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / porPagina))
+  const inicioPagina = (pagina - 1) * porPagina
+  const productosPagina = productosFiltrados.slice(inicioPagina, inicioPagina + porPagina)
 
   const cambiarCampo = (
     campo: keyof FormProducto,
@@ -117,7 +125,7 @@ export default function Productos({
     })
 
     if (cambios.length === 0) {
-      alert('No realizaste cambios')
+      await Swal.fire('Sin cambios', 'No realizaste cambios en los productos.', 'info')
       return
     }
 
@@ -132,19 +140,20 @@ export default function Productos({
     })
 
     if (invalido) {
-      alert(
-        'Revisá los datos. El nombre no puede quedar vacío y el stock mínimo no puede ser negativo.'
-      )
+      await Swal.fire('Revisá los datos', 'El nombre no puede quedar vacío y el stock mínimo no puede ser negativo.', 'warning')
       return
     }
 
-    if (
-      !window.confirm(
-        `¿Guardar los cambios de ${cambios.length} productos?`
-      )
-    ) {
-      return
-    }
+    const confirmacion = await Swal.fire({
+      title: 'Guardar cambios',
+      text: `Se modificaron ${cambios.length} producto${cambios.length === 1 ? '' : 's'}. ¿Querés guardar los cambios?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+    })
+
+    if (!confirmacion.isConfirmed) return
 
     try {
       setGuardandoTodo(true)
@@ -189,13 +198,9 @@ export default function Productos({
       setEditandoTodo(false)
       setProductosEditables({})
 
-      alert('Productos actualizados correctamente')
+      await Swal.fire('Listo', 'Productos actualizados correctamente.', 'success')
     } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'No se pudieron guardar los cambios'
-      )
+      await Swal.fire('Error', error instanceof Error ? error.message : 'No se pudieron guardar los cambios', 'error')
     } finally {
       setGuardandoTodo(false)
     }
@@ -212,9 +217,7 @@ export default function Productos({
     }
 
     setBusquedaProducto(codigo)
-    alert(
-      'No encontré un producto con ese código. Podés asignarlo desde Editar todo.'
-    )
+    void Swal.fire('Código no encontrado', 'No encontré un producto con ese código. Podés asignarlo desde Editar todo.', 'info')
   }
 
   const escanearParaProducto = (codigo: string) => {
@@ -227,6 +230,14 @@ export default function Productos({
     )
     setProductoEscaneandoId(null)
   }
+
+  useEffect(() => {
+    setPagina(1)
+  }, [busquedaProducto, porPagina])
+
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas)
+  }, [pagina, totalPaginas])
 
   useEffect(() => {
     if (!editandoTodo) return
@@ -286,7 +297,7 @@ export default function Productos({
             </button>
           )}
 
-          {esAdministrador && (
+          {(esAdministrador || esRepositor) && (
             <button
               onClick={nuevoProducto}
               className="bg-slate-900 text-white px-4 py-3 rounded-xl font-semibold"
@@ -297,14 +308,17 @@ export default function Productos({
         </div>
       </div>
 
-      {mostrarFormularioProducto && esAdministrador && (
+      {mostrarFormularioProducto && (esAdministrador || esRepositor) && (
         <form
           onSubmit={guardarProducto}
           className="bg-white border rounded-2xl p-5 sm:p-6 mt-6"
         >
-          <h4 className="text-xl font-bold mb-5">
-            Editar producto
-          </h4>
+          <h4 className="text-xl font-bold mb-2">Producto</h4>
+          {esRepositor && (
+            <p className="text-sm text-slate-500 mb-5">
+              El repositor puede cargar los datos del producto. Los precios quedan para el administrador.
+            </p>
+          )}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
@@ -327,52 +341,14 @@ export default function Productos({
               />
             ))}
 
-            <input
-              type="number"
-              min="0"
-              value={formularioProducto.precio_compra}
-              onChange={(e) =>
-                cambiarCampo('precio_compra', e.target.value)
-              }
-              placeholder="Precio compra"
-              className="border p-3 rounded-xl"
-            />
-
-            <input
-              type="number"
-              min="0"
-              value={formularioProducto.precio_minorista}
-              onChange={(e) =>
-                cambiarCampo('precio_minorista', e.target.value)
-              }
-              placeholder="Precio minorista"
-              className="border p-3 rounded-xl"
-            />
-
-            <input
-              type="number"
-              min="0"
-              value={formularioProducto.precio_mayorista}
-              onChange={(e) =>
-                cambiarCampo('precio_mayorista', e.target.value)
-              }
-              placeholder="Precio mayorista"
-              className="border p-3 rounded-xl"
-            />
-
-            <input
-              type="number"
-              min="1"
-              value={formularioProducto.cantidad_min_mayorista}
-              onChange={(e) =>
-                cambiarCampo(
-                  'cantidad_min_mayorista',
-                  e.target.value
-                )
-              }
-              placeholder="Cantidad mínima mayorista"
-              className="border p-3 rounded-xl"
-            />
+            {esAdministrador && (
+              <>
+                <input type="number" min="0" value={formularioProducto.precio_compra} onChange={(e) => cambiarCampo('precio_compra', e.target.value)} placeholder="Precio compra" className="border p-3 rounded-xl" />
+                <input type="number" min="0" value={formularioProducto.precio_minorista} onChange={(e) => cambiarCampo('precio_minorista', e.target.value)} placeholder="Precio minorista" className="border p-3 rounded-xl" />
+                <input type="number" min="0" value={formularioProducto.precio_mayorista} onChange={(e) => cambiarCampo('precio_mayorista', e.target.value)} placeholder="Precio mayorista" className="border p-3 rounded-xl" />
+                <input type="number" min="1" value={formularioProducto.cantidad_min_mayorista} onChange={(e) => cambiarCampo('cantidad_min_mayorista', e.target.value)} placeholder="Cantidad mínima mayorista" className="border p-3 rounded-xl" />
+              </>
+            )}
 
             <input
               type="number"
@@ -424,7 +400,7 @@ export default function Productos({
 
       {/* Vista móvil: tarjetas cómodas para usar con una mano */}
       <div className="md:hidden space-y-3 mt-5">
-        {productosFiltrados.map((producto) => {
+        {productosPagina.map((producto) => {
           const editable = productosEditables[producto.id]
 
           return (
@@ -603,7 +579,7 @@ export default function Productos({
           </thead>
 
           <tbody>
-            {productosFiltrados.map((producto) => {
+            {productosPagina.map((producto) => {
               const editable = productosEditables[producto.id]
 
               return (
@@ -739,6 +715,22 @@ export default function Productos({
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-5 bg-white border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="text-sm text-slate-500">
+          Mostrando {productosFiltrados.length === 0 ? 0 : inicioPagina + 1}–{Math.min(inicioPagina + porPagina, productosFiltrados.length)} de {productosFiltrados.length} productos
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={porPagina} onChange={(e) => setPorPagina(Number(e.target.value))} className="border px-3 py-2 rounded-lg">
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+          </select>
+          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((v) => Math.max(1, v - 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Anterior</button>
+          <span className="px-3 py-2 font-semibold">Página {pagina} de {totalPaginas}</span>
+          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Siguiente</button>
+        </div>
       </div>
 
       {esRepositor && editandoTodo && (

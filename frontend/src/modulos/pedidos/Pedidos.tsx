@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
 import { API } from '../../config/api'
 import type {
   Cliente,
@@ -34,6 +35,17 @@ export default function Pedidos({
   usuario,
   cargarClientes,
 }: Props) {
+  // Usa SweetAlert2 en lugar del alert nativo del navegador.
+  const alert = (mensaje: unknown) => {
+    void Swal.fire({
+      title: 'Hermanos del Norte',
+      text: String(mensaje),
+      icon: 'info',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#2563eb',
+    })
+  }
+
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [cargando, setCargando] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -60,6 +72,8 @@ export default function Pedidos({
   const [notaPago, setNotaPago] = useState<Record<number, string>>({})
   const [guardandoPago, setGuardandoPago] = useState<number | null>(null)
   const [pedidosSeleccionados, setPedidosSeleccionados] = useState<number[]>([])
+  const [paginaPedidos, setPaginaPedidos] = useState(1)
+  const [pedidosPorPagina, setPedidosPorPagina] = useState(10)
 
   const clienteSeleccionado = useMemo(
     () => clientes.find((cliente) => cliente.id === Number(clienteId)),
@@ -878,6 +892,15 @@ export default function Pedidos({
       ? pedidos
       : pedidos.filter((pedido) => pedido.estado === filtroEstado)
 
+  const totalPaginasPedidos = Math.max(1, Math.ceil(pedidosFiltrados.length / pedidosPorPagina))
+  const inicioPedidos = (paginaPedidos - 1) * pedidosPorPagina
+  const pedidosPagina = pedidosFiltrados.slice(inicioPedidos, inicioPedidos + pedidosPorPagina)
+
+  useEffect(() => setPaginaPedidos(1), [filtroEstado, pedidosPorPagina])
+  useEffect(() => {
+    if (paginaPedidos > totalPaginasPedidos) setPaginaPedidos(totalPaginasPedidos)
+  }, [paginaPedidos, totalPaginasPedidos])
+
   const totalAdeudado = pedidos.reduce(
     (total, pedido) => total + Number(pedido.saldo || 0),
     0
@@ -1265,7 +1288,7 @@ export default function Pedidos({
             <button
               type="button"
               onClick={() => {
-                const idsVisibles = pedidosFiltrados.map((pedido) => pedido.id)
+                const idsVisibles = pedidosPagina.map((pedido) => pedido.id)
                 const todosSeleccionados =
                   idsVisibles.length > 0 &&
                   idsVisibles.every((id) => pedidosSeleccionados.includes(id))
@@ -1316,7 +1339,7 @@ export default function Pedidos({
           <div className="py-10 text-center text-slate-500">No hay pedidos para mostrar.</div>
         ) : (
           <div className="space-y-4">
-            {pedidosFiltrados.map((pedido) => (
+            {pedidosPagina.map((pedido) => (
               <div
                 key={pedido.id}
                 className={`border rounded-2xl p-5 ${
@@ -1478,6 +1501,18 @@ export default function Pedidos({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {!cargando && pedidosFiltrados.length > 0 && (
+          <div className="mt-5 bg-white border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span className="text-sm text-slate-500">Mostrando {inicioPedidos + 1}–{Math.min(inicioPedidos + pedidosPorPagina, pedidosFiltrados.length)} de {pedidosFiltrados.length} pedidos</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={pedidosPorPagina} onChange={(e) => setPedidosPorPagina(Number(e.target.value))} className="border px-3 py-2 rounded-lg"><option value={10}>10 por página</option><option value={20}>20 por página</option><option value={50}>50 por página</option></select>
+              <button type="button" disabled={paginaPedidos <= 1} onClick={() => setPaginaPedidos((v) => Math.max(1, v - 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Anterior</button>
+              <span className="font-semibold">{paginaPedidos} / {totalPaginasPedidos}</span>
+              <button type="button" disabled={paginaPedidos >= totalPaginasPedidos} onClick={() => setPaginaPedidos((v) => Math.min(totalPaginasPedidos, v + 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Siguiente</button>
+            </div>
           </div>
         )}
       </div>

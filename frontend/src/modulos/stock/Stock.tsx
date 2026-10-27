@@ -1,4 +1,5 @@
-import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import Swal from 'sweetalert2'
 import EscanerCodigo from '../../componentes/EscanerCodigo'
 import type {
   FormMovimiento,
@@ -47,8 +48,29 @@ export default function Stock({
   setStockEditable,
   movimientos,
 }: Props) {
+  // Usa SweetAlert2 en lugar del alert nativo del navegador.
+  const alert = (mensaje: unknown) => {
+    void Swal.fire({
+      title: 'Hermanos del Norte',
+      text: String(mensaje),
+      icon: 'info',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#2563eb',
+    })
+  }
+
   const puedeEditarMasivo = rol === 'Repositor' || rol === 'Administrador'
   const [escanerAbierto, setEscanerAbierto] = useState(false)
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState(10)
+  const totalPaginas = Math.max(1, Math.ceil(productosStock.length / porPagina))
+  const inicioPagina = (pagina - 1) * porPagina
+  const productosPagina = productosStock.slice(inicioPagina, inicioPagina + porPagina)
+
+  useEffect(() => setPagina(1), [busquedaStock, porPagina])
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas)
+  }, [pagina, totalPaginas])
 
   const usarCodigoEscaneado = (codigo: string) => {
     const producto = productos.find(
@@ -202,7 +224,7 @@ export default function Stock({
 
           {/* Celular */}
           <div className="md:hidden space-y-3">
-            {productosStock.map((producto) => (
+            {productosPagina.map((producto) => (
               <div
                 key={producto.id}
                 className="border rounded-2xl p-4"
@@ -261,7 +283,7 @@ export default function Stock({
               </thead>
 
               <tbody>
-                {productosStock.map((producto) => (
+                {productosPagina.map((producto) => (
                   <tr key={producto.id} className="border-t">
                     <td className="p-3 font-semibold">
                       {producto.nombre}
@@ -298,6 +320,19 @@ export default function Stock({
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span className="text-sm text-slate-500">
+              Mostrando {productosStock.length === 0 ? 0 : inicioPagina + 1}–{Math.min(inicioPagina + porPagina, productosStock.length)} de {productosStock.length}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={porPagina} onChange={(e) => setPorPagina(Number(e.target.value))} className="border px-3 py-2 rounded-lg">
+                <option value={10}>10 por página</option><option value={20}>20 por página</option><option value={50}>50 por página</option>
+              </select>
+              <button type="button" disabled={pagina <= 1} onClick={() => setPagina((v) => Math.max(1, v - 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Anterior</button>
+              <span className="font-semibold px-2">{pagina} / {totalPaginas}</span>
+              <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Siguiente</button>
+            </div>
           </div>
         </div>
       </div>

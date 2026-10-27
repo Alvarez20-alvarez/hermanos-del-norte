@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import { API } from './config/api'
 import Productos from './modulos/productos/Productos'
 import Stock from './modulos/stock/Stock'
@@ -52,6 +53,33 @@ import type {
 // APP
 // =====
 function App() {
+
+  // Mensajes visuales del sistema (evita los alert/confirm nativos del navegador)
+  const alert = (mensaje: unknown) => {
+    void Swal.fire({
+      title: 'Hermanos del Norte',
+      text: String(mensaje),
+      icon: 'info',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#2563eb',
+    })
+  }
+
+  const confirmarAccion = async (mensaje: string) => {
+    const resultado = await Swal.fire({
+      title: 'Confirmar acción',
+      text: mensaje,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    })
+
+    return resultado.isConfirmed
+  }
 
   // ========================
   // CONFIGURACION - ESTADOS
@@ -213,6 +241,8 @@ const [
     setSeccionActual,
   ] = useState<Seccion>('Inicio')
 
+  const [menuAbierto, setMenuAbierto] = useState(false)
+
   // ========
   // PRODUCTOS
   // ===========
@@ -308,7 +338,7 @@ const [
       return
     }
 
-    if (!window.confirm(`¿Guardar ${cambios.length} cambios de stock?`)) {
+    if (!(await confirmarAccion(`¿Guardar ${cambios.length} cambios de stock?`))) {
       return
     }
 
@@ -509,9 +539,9 @@ const eliminarProveedor = async (
   proveedor: Proveedor
 ) => {
   if (
-    !window.confirm(
+    !(await confirmarAccion(
       `¿Eliminar al proveedor ${proveedor.nombre}?`
-    )
+    ))
   ) {
     return
   }
@@ -1105,9 +1135,9 @@ useEffect(() => {
     cliente: Cliente
   ) => {
     if (
-      !window.confirm(
+      !(await confirmarAccion(
         `¿Eliminar a ${cliente.nombre}?`
-      )
+      ))
     ) {
       return
     }
@@ -1242,9 +1272,9 @@ useEffect(() => {
         : 'desactivar'
 
     if (
-      !window.confirm(
+      !(await confirmarAccion(
         `¿Seguro que querés ${accion} a ${empleado.nombre}?`
-      )
+      ))
     ) {
       return
     }
@@ -1696,143 +1726,80 @@ const totalCompra =
     0
   )
 
-const confirmarVenta = async () => {
+const confirmarVenta = async (dineroRecibido = 0, cajaId?: number): Promise<boolean> => {
   if (carrito.length === 0) {
-    alert('No hay productos en la venta')
-    return
+    await Swal.fire('Venta vacía', 'No hay productos en la venta.', 'warning')
+    return false
   }
 
-  if (
-    !window.confirm(
-      `¿Confirmar venta por $${totalVenta.toLocaleString(
-        'es-AR'
-      )}?`
-    )
-  ) {
-    return
-  }
+  const confirmacion = await Swal.fire({
+    title: 'Finalizar compra',
+    html: `Total de la venta: <b>$${totalVenta.toLocaleString('es-AR')}</b>`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Finalizar venta',
+    cancelButtonText: 'Cancelar',
+  })
+
+  if (!confirmacion.isConfirmed) return false
 
   try {
     setGuardandoVenta(true)
 
-    const respuesta = await fetch(
-      `${API}/ventas`,
-      {
-        method: 'POST',
+    const respuesta = await fetch(`${API}/ventas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        usuario: usuarioLogueado?.usuario,
+        cliente_id: clienteVenta ? Number(clienteVenta) : null,
+        tipo_venta: tipoVenta,
+        forma_pago: formaPago,
+        descuento: descuentoImporte,
+        productos: carrito.map((item) => ({
+          producto_id: item.producto.id,
+          cantidad: item.cantidad,
+        })),
+        caja_id: cajaId ?? null,
+        dinero_recibido: formaPago === 'EFECTIVO' ? dineroRecibido : 0,
+      }),
+    })
 
-        headers: {
-          'Content-Type':
-            'application/json',
-        },
-
-        body: JSON.stringify({
-          usuario:
-            usuarioLogueado?.usuario,
-
-          cliente_id:
-            clienteVenta
-              ? Number(
-                  clienteVenta
-                )
-              : null,
-
-          tipo_venta:
-            tipoVenta,
-
-          forma_pago:
-            formaPago,
-
-          descuento:
-            descuentoImporte,
-
-          productos:
-            carrito.map(
-              (item) => ({
-                producto_id:
-                  item.producto.id,
-
-                cantidad:
-                  item.cantidad,
-              })
-            ),
-        }),
-      }
-    )
-
-    const datos =
-      await respuesta.json()
+    const datos = await respuesta.json()
 
     if (!respuesta.ok) {
-      alert(
-        datos.mensaje ||
-          'No se pudo registrar la venta'
-      )
-      return
+      await Swal.fire('No se pudo registrar', datos.mensaje || 'No se pudo registrar la venta', 'error')
+      return false
     }
 
-    const clienteSeleccionado =
-      clientes.find(
-        (cliente) =>
-          cliente.id ===
-          Number(clienteVenta)
-      )
+    const clienteSeleccionado = clientes.find(
+      (cliente) => cliente.id === Number(clienteVenta)
+    )
 
     setTicketVenta({
-      venta_id:
-        datos.venta_id,
-
-      fecha:
-        new Date().toLocaleString(
-          'es-AR'
-        ),
-
-      cliente:
-        clienteSeleccionado?.nombre ||
-        'Consumidor final',
-
-      usuario:
-        usuarioLogueado?.nombre ||
-        usuarioLogueado?.usuario ||
-        '',
-
+      venta_id: datos.venta_id,
+      fecha: new Date().toLocaleString('es-AR'),
+      cliente: clienteSeleccionado?.nombre || 'Consumidor final',
+      usuario: usuarioLogueado?.nombre || usuarioLogueado?.usuario || '',
       tipoVenta,
-
       formaPago,
-
-      productos:
-        carrito.map(
-          (item) => {
-            const precio =
-              obtenerPrecio(
-                item.producto
-              )
-
-            return {
-              nombre:
-                item.producto.nombre,
-
-              cantidad:
-                item.cantidad,
-
-              precio,
-
-              subtotal:
-                precio *
-                item.cantidad,
-            }
-          }
-        ),
-
-      subtotal:
-        subtotalVenta,
-
-      descuentoPorcentaje:
-        descuentoNumero,
-
+      productos: carrito.map((item) => {
+        const precio = obtenerPrecio(item.producto)
+        return {
+          nombre: item.producto.nombre,
+          cantidad: item.cantidad,
+          precio,
+          subtotal: precio * item.cantidad,
+        }
+      }),
+      subtotal: subtotalVenta,
+      descuentoPorcentaje: descuentoNumero,
       descuentoImporte,
-
-      total:
-        totalVenta,
+      total: totalVenta,
+      dineroRecibido: formaPago === 'EFECTIVO' ? dineroRecibido : 0,
+      vuelto:
+        formaPago === 'EFECTIVO'
+          ? Math.max(0, dineroRecibido - totalVenta)
+          : 0,
     })
 
     setCarrito([])
@@ -1847,15 +1814,15 @@ const confirmarVenta = async () => {
     await cargarVentas()
     await cargarReporte()
 
+    return true
   } catch {
-    alert(
-      'No se pudo registrar la venta'
-    )
+    await Swal.fire('Error', 'No se pudo registrar la venta.', 'error')
+    return false
   } finally {
     setGuardandoVenta(false)
   }
-
 }
+
 
 
 const confirmarCompra = async () => {
@@ -1869,11 +1836,11 @@ const confirmarCompra = async () => {
   }
 
   if (
-    !window.confirm(
+    !(await confirmarAccion(
       `¿Registrar compra por $${totalCompra.toLocaleString(
         'es-AR'
       )}?`
-    )
+    ))
   ) {
     return
   }
@@ -2413,16 +2380,72 @@ const proveedoresFiltrados =
     ]
 
   // ===================================================
+  // CAJA DEL CAJERO EN PANTALLA EXCLUSIVA
+  // ===================================================
+
+  if (usuarioLogueado.rol === 'Cajero' && seccionActual === 'Ventas') {
+    return (
+      <div className="hdn-app min-h-screen">
+        <div className="bg-[#08111f] text-white px-4 sm:px-8 py-4 flex items-center justify-between gap-4 border-b border-white/10 shadow-lg">
+          <div>
+            <div className="font-black text-lg">HERMANOS DEL NORTE · CAJA</div>
+            <div className="text-sm text-slate-300">{usuarioLogueado.nombre}</div>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setSeccionActual('Inicio')} className="border border-slate-600 px-4 py-2 rounded-xl">Volver</button>
+            <button type="button" onClick={cerrarSesion} className="bg-white text-slate-950 px-4 py-2 rounded-xl font-semibold">Cerrar sesión</button>
+          </div>
+        </div>
+        <main className="p-4 sm:p-8 max-w-[1600px] mx-auto">
+          <Ventas
+            ticketVenta={ticketVenta}
+            setTicketVenta={setTicketVenta}
+            agregarProductoManual={agregarProductoManual}
+            buscarCodigo={buscarCodigo}
+            cambiarCantidad={cambiarCantidad}
+            cambiarClienteVenta={cambiarClienteVenta}
+            carrito={carrito}
+            clienteVenta={clienteVenta}
+            clientes={clientes}
+            codigoVenta={codigoVenta}
+            confirmarVenta={confirmarVenta}
+            descuento={descuento}
+            descuentoNumero={descuentoNumero}
+            descuentoImporte={descuentoImporte}
+            formaPago={formaPago}
+            guardandoVenta={guardandoVenta}
+            obtenerPrecio={obtenerPrecio}
+            productoVentaSeleccionado={productoVentaSeleccionado}
+            productos={productos}
+            setCodigoVenta={setCodigoVenta}
+            setDescuento={setDescuento}
+            setFormaPago={setFormaPago}
+            setProductoVentaSeleccionado={setProductoVentaSeleccionado}
+            setTipoVenta={setTipoVenta}
+            subtotalVenta={subtotalVenta}
+            tipoVenta={tipoVenta}
+            totalVenta={totalVenta}
+            usuarioLogueado={usuarioLogueado}
+            salirDeCaja={() => setSeccionActual('Inicio')}
+          />
+        </main>
+      </div>
+    )
+  }
+
+  // ===================================================
   // SISTEMA
   // ===================================================
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="hdn-app min-h-screen flex">
 
       <Sidebar
         secciones={seccionesPermitidas}
         actual={seccionActual}
         cambiarSeccion={setSeccionActual}
+        abierto={menuAbierto}
+        cerrar={() => setMenuAbierto(false)}
       />
 
       <div className="flex-1 min-w-0">
@@ -2431,9 +2454,10 @@ const proveedoresFiltrados =
           seccion={seccionActual}
           usuario={usuarioLogueado}
           cerrarSesion={cerrarSesion}
+          abrirMenu={() => setMenuAbierto(true)}
         />
 
-        <main className="p-8">
+        <main className="p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto">
 
           {/* ================================================= */}
           {/* INICIO */}
@@ -2505,6 +2529,8 @@ const proveedoresFiltrados =
               subtotalVenta={subtotalVenta}
               tipoVenta={tipoVenta}
               totalVenta={totalVenta}
+              usuarioLogueado={usuarioLogueado}
+              salirDeCaja={() => setSeccionActual('Inicio')}
             />
           )}
 

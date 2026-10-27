@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { TipoVenta } from '../../tipos'
 
 type Props = {
@@ -16,6 +17,17 @@ type Props = {
 }
 
 export default function Clientes(p: Props) {
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState(10)
+  const totalPaginas = Math.max(1, Math.ceil(p.clientesFiltrados.length / porPagina))
+  const inicioPagina = (pagina - 1) * porPagina
+  const clientesPagina = p.clientesFiltrados.slice(inicioPagina, inicioPagina + porPagina)
+
+  useEffect(() => setPagina(1), [p.busquedaCliente, porPagina])
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas)
+  }, [pagina, totalPaginas])
+
   return (
 
             <div>
@@ -198,7 +210,7 @@ export default function Clientes(p: Props) {
 
                   <tbody>
 
-                    {p.clientesFiltrados.map(
+                    {clientesPagina.map(
                       (cliente: any) => (
 
                         <tr
@@ -270,7 +282,17 @@ export default function Clientes(p: Props) {
 
               </div>
 
-            </div>
+            <div className="mt-5 bg-white border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <span className="text-sm text-slate-500">Mostrando {p.clientesFiltrados.length === 0 ? 0 : inicioPagina + 1}–{Math.min(inicioPagina + porPagina, p.clientesFiltrados.length)} de {p.clientesFiltrados.length}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select value={porPagina} onChange={(e) => setPorPagina(Number(e.target.value))} className="border px-3 py-2 rounded-lg"><option value={10}>10 por página</option><option value={20}>20 por página</option><option value={50}>50 por página</option></select>
+                  <button type="button" disabled={pagina <= 1} onClick={() => setPagina((v) => Math.max(1, v - 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Anterior</button>
+                  <span className="font-semibold">{pagina} / {totalPaginas}</span>
+                  <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))} className="border px-3 py-2 rounded-lg disabled:opacity-40">Siguiente</button>
+                </div>
+              </div>
+
+              </div>
 
           )
 }

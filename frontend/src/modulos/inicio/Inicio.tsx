@@ -14,7 +14,7 @@ export default function Inicio(p: Props) {
 
               <div>
 
-                <h3 className="text-3xl font-bold">
+                <h3 className="text-3xl font-black tracking-tight">
                   Panel principal
                 </h3>
 
@@ -26,7 +26,7 @@ export default function Inicio(p: Props) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 mt-8">
 
-                <div className="bg-white border rounded-2xl p-6">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                   <p className="text-slate-500">
                     Ventas de hoy
                   </p>
@@ -45,7 +45,7 @@ export default function Inicio(p: Props) {
                   </p>
                 </div>
 
-                <div className="bg-white border rounded-2xl p-6">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                   <p className="text-slate-500">
                     Ganancia bruta
                   </p>
@@ -70,7 +70,7 @@ export default function Inicio(p: Props) {
                   </p>
                 </div>
 
-                <div className="bg-white border rounded-2xl p-6">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                   <p className="text-slate-500">
                     Compras de hoy
                   </p>
@@ -103,7 +103,7 @@ export default function Inicio(p: Props) {
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
 
-                <div className="bg-white border rounded-2xl overflow-hidden">
+                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
 
                   <div className="p-5 border-b">
 
@@ -176,7 +176,7 @@ export default function Inicio(p: Props) {
 
                 </div>
 
-                <div className="bg-white border rounded-2xl overflow-hidden">
+                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
 
                   <div className="p-5 border-b">
 

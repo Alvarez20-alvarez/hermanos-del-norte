@@ -20,6 +20,8 @@ router.post('/api/ventas', async (req, res) => {
       forma_pago,
       descuento,
       productos,
+      caja_id,
+      dinero_recibido,
     } = req.body
 
     if (
@@ -216,6 +218,31 @@ router.post('/api/ventas', async (req, res) => {
         descuentoNumero
       )
 
+    const cajaId = Number(caja_id)
+    const dineroRecibido = Number(dinero_recibido || 0)
+
+    if (!cajaId) {
+      throw new Error('Debés abrir una caja antes de registrar ventas')
+    }
+
+    const [cajas]: any = await conexion.query(
+      `
+      SELECT id, estado
+      FROM cajas
+      WHERE id = ?
+      FOR UPDATE
+      `,
+      [cajaId]
+    )
+
+    if (cajas.length === 0 || cajas[0].estado !== 'ABIERTA') {
+      throw new Error('La caja seleccionada no está abierta')
+    }
+
+    if (formaPago === 'EFECTIVO' && dineroRecibido < total) {
+      throw new Error('El dinero recibido es menor al total de la venta')
+    }
+
     // Crear cabecera
     const [venta]: any =
       await conexion.query(
@@ -305,6 +332,24 @@ router.post('/api/ventas', async (req, res) => {
           item.cantidad,
           item.stock_anterior,
           item.stock_nuevo,
+          `Venta #${ventaId}`,
+        ]
+      )
+    }
+
+    if (formaPago === 'EFECTIVO') {
+      await conexion.query(
+        `
+        INSERT INTO movimientos_caja
+        (caja_id, venta_id, tipo, monto, dinero_recibido, vuelto, descripcion)
+        VALUES (?, ?, 'VENTA', ?, ?, ?, ?)
+        `,
+        [
+          cajaId,
+          ventaId,
+          total,
+          dineroRecibido,
+          Math.max(0, dineroRecibido - total),
           `Venta #${ventaId}`,
         ]
       )
