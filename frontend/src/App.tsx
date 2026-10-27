@@ -214,7 +214,7 @@ const [
     setSeccionActual,
   ] = useState<Seccion>('Inicio')
 
-  const [menuAbierto, setMenuAbierto] = useState(true)
+  const [menuAbierto, setMenuAbierto] = useState(false)
 
   // ========
   // PRODUCTOS
