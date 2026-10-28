@@ -1,0 +1,34 @@
+LIMPIEZA FINAL - PASOS
+
+1. Descomprimir este ZIP.
+2. Copiar README.md y ESTRUCTURA.md a la carpeta principal:
+   hermanos-del-norte/
+3. Copiar limpiar_proyecto.ps1 a la carpeta principal.
+4. Abrir PowerShell en la carpeta principal.
+5. Ejecutar:
+
+   powershell -ExecutionPolicy Bypass -File .\limpiar_proyecto.ps1
+
+6. Ejecutar:
+
+   git status
+
+7. Verificar que solo se hayan eliminado:
+   backend/src/db.ts
+   frontend/src/App.css
+
+   y agregado:
+   README.md
+   ESTRUCTURA.md
+
+8. Subir:
+
+   git add .
+   git commit -m "Limpieza final del proyecto"
+   git push
+
+IMPORTANTE:
+- No borrar backend/src/config/db.ts.
+- No borrar .env local.
+- No subir backups SQL a GitHub.
+- No volver a importar la base online si ya funciona.
